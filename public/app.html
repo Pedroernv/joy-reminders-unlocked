@@ -1421,6 +1421,7 @@ function saveSubject() {
   }
   saveData(); renderList(); showScreen('home');
 }
+// schedule BG after save handled via visibilitychange/focus
 
 function askDelete(i) {
   document.getElementById('confirm-icon-fa').innerHTML='<i class="fas fa-trash-can" style="color:var(--red);"></i>';
