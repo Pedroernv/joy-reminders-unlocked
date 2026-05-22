@@ -1679,6 +1679,10 @@ function showRescheduleToast(msg) {
 loadData(); renderList(); scheduleAll(); checkNotifStatus(); tickClock();
 setInterval(tickClock,  30000);
 setInterval(renderList, 60000);
+registerSW();
+// Re-schedule background notifications on key events
+window.addEventListener('focus', () => scheduleBackgroundNotifications());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState==='hidden') scheduleBackgroundNotifications(); });
 </script>
 </body>
 </html>
