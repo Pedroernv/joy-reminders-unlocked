@@ -1276,12 +1276,15 @@ function onSessionEnd(si, sessi) {
 ══════════════════════════════════════════ */
 function requestNotifPerm() {
   if(!('Notification' in window)){showToast('Não suportado neste navegador.');return;}
-  if(Notification.permission==='granted'){notifGranted=true;updateNotifUI();showToast('Notificações já ativas!');return;}
-  Notification.requestPermission().then(p=>{notifGranted=p==='granted';updateNotifUI();showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');});
+  if(Notification.permission==='granted'){notifGranted=true;updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
+  Notification.requestPermission().then(p=>{notifGranted=p==='granted';updateNotifUI();if(notifGranted)scheduleBackgroundNotifications();showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');});
 }
 function testNotification() {
   playCurrentSound();
-  if(notifGranted) new Notification('SmartSchoolPro',{body:'Notificações funcionando!'});
+  if(notifGranted){
+    if(swReg && swReg.active){ swReg.active.postMessage({type:'TEST_NOTIFICATION'}); }
+    else new Notification('SmartSchoolPro',{body:'Notificações funcionando!'});
+  }
   showToast('Som tocado! Notificação enviada.');
 }
 function checkNotifStatus() {
