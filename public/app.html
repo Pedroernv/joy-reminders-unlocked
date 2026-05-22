@@ -760,6 +760,26 @@ body {
       </button>
     </div>
 
+    <!-- ══ PROGRESS ══ -->
+    <div class="screen" id="screen-progress">
+      <div class="section-header"><div class="section-title">Resumo da semana</div></div>
+      <div id="progress-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div class="section-header"><div class="section-title">Por disciplina</div></div>
+      <div id="progress-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+    </div>
+
+    <!-- ══ CALENDAR ══ -->
+    <div class="screen" id="screen-calendar">
+      <div id="cal-strip" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <button class="header-icon-btn" style="color:var(--text-dark);border:1px solid var(--item-border);" onclick="calNav(-1)"><i class="fas fa-chevron-left"></i></button>
+        <div id="cal-month-label" style="font-weight:800;color:var(--text-dark);font-size:1.05rem;"></div>
+        <button class="header-icon-btn" style="color:var(--text-dark);border:1px solid var(--item-border);" onclick="calNav(1)"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+      <div class="section-header" style="margin-top:14px;"><div class="section-title" id="cal-day-title">Aulas do dia</div></div>
+      <div id="cal-day-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
   </div><!-- /screen-wrapper -->
 </div><!-- /phone -->
 
