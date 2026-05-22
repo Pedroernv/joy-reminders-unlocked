@@ -1497,6 +1497,171 @@ function navTo(s)      { if(s==='form') startAdd(); else showScreen(s); closeDra
 function featureMsg(n) { closeDrawer(); showToast(`${n}: em breve!`); }
 
 /* ══════════════════════════════════════════
+   PROGRESS
+════════════════════════════════════════════ */
+const PROG_KEY = 'ssp_v4_attendance'; // { 'YYYY-MM-DD_si_sessi': true }
+function loadAttendance(){ try{ return JSON.parse(localStorage.getItem(PROG_KEY))||{}; }catch{ return {}; } }
+function saveAttendance(a){ localStorage.setItem(PROG_KEY, JSON.stringify(a)); }
+function markAttended(si, sessi, dateStr){
+  const a = loadAttendance();
+  const k = `${dateStr}_${si}_${sessi}`;
+  a[k] = !a[k]; saveAttendance(a); renderProgress();
+}
+function startOfWeek(d){ const x=new Date(d); const day=x.getDay(); const diff=(day===0?-6:1-day); x.setDate(x.getDate()+diff); x.setHours(0,0,0,0); return x; }
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function renderProgress(){
+  const att = loadAttendance();
+  const weekStart = startOfWeek(now());
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+7);
+  // expected sessions this week
+  let expected = 0, attended = 0, upcoming = 0;
+  const perSubject = subjects.map((s,si)=>({ name:s.name, fa:getSubjectFa(s.name), total:0, done:0 }));
+  subjects.forEach((s,si)=>{
+    s.sessions.forEach((sess,sessi)=>{
+      // each session occurs once per week — find its date in current week
+      const tD = DAY_NUM[sess.day];
+      const d = new Date(weekStart); d.setDate(weekStart.getDate() + ((tD-1+7)%7));
+      const [h,m]=sess.hour.split(':').map(Number); d.setHours(h,m,0,0);
+      if (d >= weekStart && d < weekEnd) {
+        expected++; perSubject[si].total++;
+        const k = `${ymd(d)}_${si}_${sessi}`;
+        if (att[k]) { attended++; perSubject[si].done++; }
+        else if (d > now()) upcoming++;
+      }
+    });
+  });
+  const rate = expected ? Math.round(attended/expected*100) : 0;
+  const summary = document.getElementById('progress-summary');
+  summary.innerHTML = `
+    <div class="prog-stat"><div class="v">${attended}/${expected}</div><div class="l">Aulas concluídas</div></div>
+    <div class="prog-stat"><div class="v">${rate}%</div><div class="l">Frequência semanal</div></div>
+    <div class="prog-stat"><div class="v">${upcoming}</div><div class="l">Restantes esta semana</div></div>
+    <div class="prog-stat"><div class="v">${subjects.length}</div><div class="l">Disciplinas</div></div>
+  `;
+  const list = document.getElementById('progress-list');
+  list.innerHTML = '';
+  perSubject.forEach(p=>{
+    if(!p.total) return;
+    const pct = p.total?Math.round(p.done/p.total*100):0;
+    const row = document.createElement('div');
+    row.className = 'prog-row';
+    row.innerHTML = `
+      <div class="top"><span><i class="${p.fa}" style="margin-right:6px;color:var(--header-bg);"></i>${p.name}</span><span style="font-size:.78rem;color:var(--text-muted);">${p.done}/${p.total}</span></div>
+      <div class="bar"><div style="width:${pct}%"></div></div>
+      <div class="meta">${pct}% concluído nesta semana</div>`;
+    list.appendChild(row);
+  });
+  if (!perSubject.some(p=>p.total)) {
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-chart-bar"></i>Nenhuma aula nesta semana.</div>';
+  }
+}
+
+/* ══════════════════════════════════════════
+   CALENDAR
+════════════════════════════════════════════ */
+let calCursor = new Date(); calCursor.setDate(1);
+let calSelected = ymd(new Date());
+
+function calNav(delta){ calCursor.setMonth(calCursor.getMonth()+delta); renderCalendar(); }
+
+function renderCalendar(){
+  const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('cal-month-label').textContent = `${months[calCursor.getMonth()]} ${calCursor.getFullYear()}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>{ const e=document.createElement('div'); e.className='cal-head'; e.textContent=d; grid.appendChild(e); });
+  const first = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+  const startWeekDay = first.getDay();
+  const daysInMonth = new Date(calCursor.getFullYear(), calCursor.getMonth()+1, 0).getDate();
+  const prevMonthDays = new Date(calCursor.getFullYear(), calCursor.getMonth(), 0).getDate();
+  const today = ymd(new Date());
+  // build set of day-numbers (0-6) that have sessions
+  const sessionDayNums = new Set();
+  subjects.forEach(s=>s.sessions.forEach(sess=>sessionDayNums.add(DAY_NUM[sess.day])));
+  const cells = [];
+  for (let i=0; i<startWeekDay; i++) cells.push({ n: prevMonthDays-startWeekDay+i+1, dim:true, date:null });
+  for (let d=1; d<=daysInMonth; d++){
+    const dt = new Date(calCursor.getFullYear(), calCursor.getMonth(), d);
+    cells.push({ n:d, dim:false, date:dt });
+  }
+  while (cells.length % 7 !== 0) cells.push({ n: cells.length - daysInMonth - startWeekDay + 1, dim:true, date:null });
+  cells.forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'cal-cell';
+    if (c.dim) el.classList.add('dim');
+    if (c.date) {
+      const s = ymd(c.date);
+      if (s === today) el.classList.add('today');
+      if (s === calSelected) el.classList.add('selected');
+      if (sessionDayNums.has(c.date.getDay())) el.classList.add('has');
+      el.onclick = () => { calSelected = s; renderCalendar(); };
+    }
+    el.textContent = c.n;
+    grid.appendChild(el);
+  });
+  // events of selected day
+  const sel = new Date(calSelected+'T00:00:00');
+  const dow = sel.getDay();
+  const dayName = DAY_NAMES_PT[dow];
+  document.getElementById('cal-day-title').textContent = `Aulas de ${sel.toLocaleDateString('pt-BR',{day:'numeric',month:'long'})}`;
+  const dayList = document.getElementById('cal-day-list');
+  dayList.innerHTML = '';
+  const events = [];
+  subjects.forEach(s=>s.sessions.forEach(sess=>{ if(DAY_NUM[sess.day]===dow) events.push({s,sess}); }));
+  events.sort((a,b)=>a.sess.hour.localeCompare(b.sess.hour));
+  if (!events.length) { dayList.innerHTML = '<div class="empty-state" style="padding:18px;"><i class="fas fa-calendar-xmark"></i>Sem aulas neste dia.</div>'; return; }
+  events.forEach(({s,sess})=>{
+    const el = document.createElement('div');
+    el.className = 'cal-event';
+    el.innerHTML = `<div class="ic"><i class="${getSubjectFa(s.name)}"></i></div><div style="flex:1;"><div class="nm">${s.name}</div><div class="tm">${sess.hour} · ${sess.duration||60}min</div></div>`;
+    dayList.appendChild(el);
+  });
+}
+
+/* ══════════════════════════════════════════
+   SERVICE WORKER + BACKGROUND NOTIFICATIONS
+════════════════════════════════════════════ */
+let swReg = null;
+const isInIframe = (()=>{ try { return window.self !== window.top; } catch { return true; } })();
+const isPreviewHost = location.hostname.includes('id-preview--') || location.hostname.includes('lovableproject.com') || location.hostname.includes('lovable.app');
+
+async function registerSW(){
+  if (!('serviceWorker' in navigator)) return;
+  if (isInIframe) {
+    // Skip in iframe preview — SW would interfere; unregister any lingering one.
+    try { const regs = await navigator.serviceWorker.getRegistrations(); regs.forEach(r=>r.unregister()); } catch {}
+    return;
+  }
+  try { swReg = await navigator.serviceWorker.register('/sw.js'); scheduleBackgroundNotifications(); } catch(e){ console.warn('SW failed', e); }
+}
+
+async function scheduleBackgroundNotifications(){
+  if (!swReg || !notifGranted) return;
+  // Build list of notifications for next 7 days, 1h before each session occurrence.
+  const out = [];
+  const n = now();
+  subjects.forEach((subj, si)=>{
+    subj.sessions.forEach((sess, sessi)=>{
+      const occ = nextOccurrenceOf(sess);
+      const trig = occ.getTime() - 60*60*1000;
+      if (trig > n.getTime() && trig < n.getTime() + 7*24*60*60*1000) {
+        out.push({
+          title: 'SmartSchoolPro',
+          body: `${subj.name} começa em 1h! (${DAY_SHORT[sess.day]} ${sess.hour})`,
+          tag: `ssp-${si}-${sessi}-${occ.getTime()}`,
+          timestamp: trig,
+        });
+      }
+    });
+  });
+  try {
+    const sw = swReg.active || swReg.waiting || swReg.installing;
+    if (sw) sw.postMessage({ type: 'SCHEDULE_NOTIFICATIONS', notifications: out });
+  } catch {}
+}
+
+/* ══════════════════════════════════════════
    TOASTS
 ══════════════════════════════════════════ */
 function showToast(html) {
