@@ -1728,6 +1728,185 @@ function showRescheduleToast(msg) {
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   GRADES (Notas & Médias)
+══════════════════════════════════════════ */
+const GRADES_KEY     = 'ssp_v4_grades';      // { [subjectName]: [{id,label,value,max,weight,date}] }
+const GRADES_OPEN_KEY = 'ssp_v4_grades_open'; // { [subjectName]: true }
+const PASS_THRESHOLD = 7;   // sobre 10
+const REC_THRESHOLD  = 5;
+
+function loadGrades(){
+  try { return JSON.parse(localStorage.getItem(GRADES_KEY)) || {}; } catch { return {}; }
+}
+function saveGrades(g){ localStorage.setItem(GRADES_KEY, JSON.stringify(g)); }
+function loadGradesOpen(){
+  try { return JSON.parse(localStorage.getItem(GRADES_OPEN_KEY)) || {}; } catch { return {}; }
+}
+function saveGradesOpen(o){ localStorage.setItem(GRADES_OPEN_KEY, JSON.stringify(o)); }
+
+function gradesFor(name){
+  const all = loadGrades();
+  return Array.isArray(all[name]) ? all[name] : [];
+}
+function computeStats(items){
+  if (!items.length) return { avg:null, weighted:null, min:null, max:null, count:0, sumW:0 };
+  // Normaliza tudo para escala 0..10
+  const norm = items.map(it => ({ v:(it.value/it.max)*10, w: it.weight || 1 }));
+  const simple = norm.reduce((a,b)=>a+b.v,0) / norm.length;
+  const sumW = norm.reduce((a,b)=>a+b.w,0);
+  const weighted = sumW > 0 ? norm.reduce((a,b)=>a+b.v*b.w,0) / sumW : simple;
+  return {
+    avg: simple,
+    weighted,
+    min: Math.min(...norm.map(n=>n.v)),
+    max: Math.max(...norm.map(n=>n.v)),
+    count: items.length,
+    sumW,
+  };
+}
+function avgClass(avg){
+  if (avg == null) return 'avg-none';
+  if (avg >= PASS_THRESHOLD) return 'avg-ok';
+  if (avg >= REC_THRESHOLD)  return 'avg-rec';
+  return 'avg-bad';
+}
+function avgLabel(avg){
+  if (avg == null) return 'Sem notas';
+  if (avg >= PASS_THRESHOLD) return 'Aprovado';
+  if (avg >= REC_THRESHOLD)  return 'Recuperação';
+  return 'Reprovado';
+}
+function fmtAvg(v){ return v==null ? '—' : v.toFixed(1).replace('.',','); }
+
+function renderGrades(){
+  const list = document.getElementById('grades-list');
+  const summary = document.getElementById('grades-summary');
+  if (!subjects.length){
+    summary.innerHTML = '';
+    list.innerHTML = '<div class="gr-empty">Cadastre uma disciplina primeiro para lançar notas.</div>';
+    return;
+  }
+  const open = loadGradesOpen();
+  const perSubj = subjects.map(s => ({ name:s.name, stats: computeStats(gradesFor(s.name)) }));
+  const withGrades = perSubj.filter(p => p.stats.count > 0);
+  const globalAvg = withGrades.length
+    ? withGrades.reduce((a,b)=>a+b.stats.weighted,0) / withGrades.length
+    : null;
+  const approved = withGrades.filter(p => p.stats.weighted >= PASS_THRESHOLD).length;
+  const best  = withGrades.slice().sort((a,b)=>b.stats.weighted-a.stats.weighted)[0];
+  const worst = withGrades.slice().sort((a,b)=>a.stats.weighted-b.stats.weighted)[0];
+
+  summary.innerHTML = `
+    <div class="prog-stat"><div class="v">${fmtAvg(globalAvg)}</div><div class="l">Média geral</div></div>
+    <div class="prog-stat"><div class="v">${approved}/${perSubj.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
+    <div class="prog-stat"><div class="v">${best ? best.name.split(' ')[0] : '—'}</div><div class="l">Melhor: ${best?fmtAvg(best.stats.weighted):'—'}</div></div>
+    <div class="prog-stat"><div class="v">${worst && worst!==best ? worst.name.split(' ')[0] : '—'}</div><div class="l">Atenção: ${worst&&worst!==best?fmtAvg(worst.stats.weighted):'—'}</div></div>
+  `;
+
+  list.innerHTML = '';
+  subjects.forEach((subj) => {
+    const items = gradesFor(subj.name);
+    const stats = computeStats(items);
+    const cls   = avgClass(stats.weighted);
+    const card  = document.createElement('div');
+    card.className = 'gr-card' + (open[subj.name] ? ' open' : '');
+    const pct = stats.weighted != null ? Math.max(0,Math.min(100,(stats.weighted/10)*100)) : 0;
+    const barColor = stats.weighted == null ? 'rgba(0,0,0,.15)'
+      : stats.weighted >= PASS_THRESHOLD ? '#2ea056'
+      : stats.weighted >= REC_THRESHOLD ? '#d99825' : '#c83737';
+    card.innerHTML = `
+      <div class="gr-head" data-name="${escAttr(subj.name)}">
+        <div class="ic"><i class="fas fa-book"></i></div>
+        <div class="nm">${escHtml(subj.name)}</div>
+        <div class="avg-pill ${cls}">${fmtAvg(stats.weighted)}</div>
+      </div>
+      <div class="gr-body">
+        <div class="gr-stats">
+          <div class="gr-stat"><div class="v">${fmtAvg(stats.avg)}</div><div class="l">Simples</div></div>
+          <div class="gr-stat"><div class="v">${fmtAvg(stats.weighted)}</div><div class="l">Ponderada</div></div>
+          <div class="gr-stat"><div class="v">${fmtAvg(stats.max)}</div><div class="l">Maior</div></div>
+          <div class="gr-stat"><div class="v">${fmtAvg(stats.min)}</div><div class="l">Menor</div></div>
+        </div>
+        <div class="gr-bar"><div style="width:${pct}%;background:${barColor};"></div></div>
+        <div style="font-size:.72rem;color:var(--text-muted);font-weight:700;margin:6px 0 10px;">
+          ${stats.count} nota${stats.count!==1?'s':''} · Status: <b style="color:var(--text-dark);">${avgLabel(stats.weighted)}</b>
+        </div>
+        <div class="gr-list">
+          ${items.length ? items.map(it=>`
+            <div class="gr-item">
+              <div>
+                <div class="lbl">${escHtml(it.label||'Avaliação')}</div>
+                <div class="wt">Peso ${it.weight||1}${it.date?(' · '+it.date):''}</div>
+              </div>
+              <div class="val">${(+it.value).toFixed(1).replace('.',',')}/${(+it.max).toFixed(0)}</div>
+              <button class="x" data-gid="${it.id}" data-sname="${escAttr(subj.name)}" title="Remover"><i class="fas fa-xmark"></i></button>
+            </div>
+          `).join('') : '<div class="gr-empty">Nenhuma nota ainda.</div>'}
+        </div>
+        <div class="gr-add" data-sname="${escAttr(subj.name)}">
+          <input class="g-lbl" placeholder="Ex: Prova 1, Trabalho..." maxlength="40" />
+          <input class="g-val" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Nota" />
+          <input class="g-max" type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Máx" value="10" />
+          <input class="g-wt"  type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Peso" value="1" style="grid-column:1 / span 1;" />
+          <button class="gr-add-btn" style="grid-column:2 / -1;"><i class="fas fa-plus"></i> Adicionar nota</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  // Wire interactions
+  list.querySelectorAll('.gr-head').forEach(h=>{
+    h.onclick = () => {
+      const name = h.getAttribute('data-name');
+      const o = loadGradesOpen();
+      o[name] = !o[name]; saveGradesOpen(o);
+      h.parentElement.classList.toggle('open', !!o[name]);
+    };
+  });
+  list.querySelectorAll('.x').forEach(btn=>{
+    btn.onclick = () => removeGrade(btn.getAttribute('data-sname'), btn.getAttribute('data-gid'));
+  });
+  list.querySelectorAll('.gr-add-btn').forEach(btn=>{
+    btn.onclick = () => {
+      const wrap = btn.parentElement;
+      const name = wrap.getAttribute('data-sname');
+      const label = wrap.querySelector('.g-lbl').value.trim() || 'Avaliação';
+      const value = parseFloat(wrap.querySelector('.g-val').value);
+      const max   = parseFloat(wrap.querySelector('.g-max').value) || 10;
+      const weight= parseFloat(wrap.querySelector('.g-wt').value)  || 1;
+      if (isNaN(value)) { showToast('Informe a nota'); return; }
+      if (value < 0 || value > max) { showToast(`Nota deve estar entre 0 e ${max}`); return; }
+      addGrade(name, { label, value, max, weight });
+    };
+  });
+}
+
+function addGrade(name, data){
+  const all = loadGrades();
+  if (!Array.isArray(all[name])) all[name] = [];
+  all[name].push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    label: data.label, value: +data.value, max: +data.max, weight: +data.weight,
+    date: new Date().toLocaleDateString('pt-BR'),
+  });
+  saveGrades(all);
+  const o = loadGradesOpen(); o[name] = true; saveGradesOpen(o);
+  renderGrades(); showToast('Nota adicionada!');
+}
+function removeGrade(name, id){
+  const all = loadGrades();
+  if (!Array.isArray(all[name])) return;
+  all[name] = all[name].filter(x => x.id !== id);
+  saveGrades(all); renderGrades();
+}
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return escHtml(s); }
+
+/* ══════════════════════════════════════════
+   INIT (continued)
+══════════════════════════════════════════ */
 loadData(); renderList(); scheduleAll(); checkNotifStatus(); tickClock();
 setInterval(tickClock,  30000);
 setInterval(renderList, 60000);
