@@ -884,7 +884,7 @@ body {
         </button>
       </div>
       <div id="grades-content" style="display:none;">
-        <div class="section-header"><div class="section-title">Resumo geral</div></div>
+        
         <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
         <div class="section-header">
           <div class="section-title">Por disciplina</div>
@@ -909,7 +909,7 @@ body {
         </button>
       </div>
       <div id="tasks-content" style="display:none;">
-        <div class="section-header"><div class="section-title" id="tasks-pending-title">Pendentes</div></div>
+        
         <div id="tasks-pending" style="display:flex;flex-direction:column;gap:8px;"></div>
         <div class="section-header" style="margin-top:14px;"><div class="section-title">Concluídas</div></div>
         <div id="tasks-done" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -2189,7 +2189,7 @@ function renderTasks(){
   };
   const sortDone = (a,b) => (b.doneAt||'').localeCompare(a.doneAt||'');
 
-  document.getElementById('tasks-pending-title').textContent = `Pendentes (${pending.length})`;
+  
   pendBox.innerHTML = pending.length
     ? pending.sort(sortPend).map(renderTaskCard).join('')
     : '<div class="empty-mini">Tudo em dia! 🎉</div>';
