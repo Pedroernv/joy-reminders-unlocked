@@ -2176,7 +2176,6 @@ function renderTasks(){
   const dueSoon = pending.filter(t => t.due && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 2).length;
 
   summary.innerHTML = `
-    <div class="prog-stat"><div class="v">${pending.length}</div><div class="l">Pendentes</div></div>
     <div class="prog-stat"><div class="v" style="color:${overdue?'#b02a2a':''};">${overdue}</div><div class="l">Atrasadas</div></div>
     <div class="prog-stat"><div class="v" style="color:${dueSoon?'#9a6a10':''};">${dueSoon}</div><div class="l">Próximas (≤2d)</div></div>
     <div class="prog-stat"><div class="v">${done.length}</div><div class="l">Concluídas</div></div>

@@ -1,5 +1,5 @@
 // SmartSchoolPro Service Worker — offline cache + background notifications
-const CACHE = 'ssp-v1';
+const CACHE = 'ssp-v2';
 const ASSETS = [
   '/app.html',
   '/manifest.json',
@@ -22,6 +22,19 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin === self.location.origin && url.pathname === '/app.html') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetched = fetch(req).then((res) => {
