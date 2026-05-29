@@ -1,0 +1,21 @@
+{
+  "name": "SmartSchoolPro",
+  "short_name": "SmartSchool",
+  "description": "Organize sua vida escolar: horários, notas, tarefas e lembretes.",
+  "start_url": "/app.html",
+  "display": "standalone",
+  "background_color": "#c8d8c8",
+  "theme_color": "#2d3a4a",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "pt-BR"
+}

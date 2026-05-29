@@ -2,6 +2,8 @@
 const CACHE = 'ssp-v1';
 const ASSETS = [
   '/app.html',
+  '/manifest.json',
+  '/icon.svg',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
 ];
