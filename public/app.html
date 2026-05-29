@@ -847,13 +847,48 @@ body {
 
     <!-- ══ GRADES ══ -->
     <div class="screen" id="screen-grades">
-      <div class="section-header"><div class="section-title">Resumo geral</div></div>
-      <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
-      <div class="section-header">
-        <div class="section-title">Por disciplina</div>
-        <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;">Toque para abrir</div>
+      <div id="grades-empty" class="empty-state" style="display:none;">
+        <div class="empty-ic"><i class="fas fa-square-root-variable"></i></div>
+        <div class="empty-title">Nenhuma nota registrada</div>
+        <div class="empty-desc">Comece a acompanhar seu desempenho lançando a primeira nota de uma disciplina.</div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openGradeModal()">
+          <i class="fas fa-plus"></i> Adicionar primeira nota
+        </button>
       </div>
-      <div id="grades-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="grades-content" style="display:none;">
+        <div class="section-header"><div class="section-title">Resumo geral</div></div>
+        <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <div class="section-header">
+          <div class="section-title">Por disciplina</div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;">Toque para abrir</div>
+        </div>
+        <div id="grades-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openGradeModal()">
+          <i class="fas fa-plus"></i> Adicionar nova nota
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ TASKS ══ -->
+    <div class="screen" id="screen-tasks">
+      <div id="tasks-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div id="tasks-empty" class="empty-state" style="display:none;">
+        <div class="empty-ic"><i class="fas fa-list-check"></i></div>
+        <div class="empty-title">Sem tarefas por aqui</div>
+        <div class="empty-desc">Adicione tarefas de casa, trabalhos e provas para acompanhar prazos e não perder nada.</div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openTaskModal()">
+          <i class="fas fa-plus"></i> Adicionar primeira tarefa
+        </button>
+      </div>
+      <div id="tasks-content" style="display:none;">
+        <div class="section-header"><div class="section-title" id="tasks-pending-title">Pendentes</div></div>
+        <div id="tasks-pending" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div class="section-header" style="margin-top:14px;"><div class="section-title">Concluídas</div></div>
+        <div id="tasks-done" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openTaskModal()">
+          <i class="fas fa-plus"></i> Nova tarefa
+        </button>
+      </div>
     </div>
 
   </div><!-- /screen-wrapper -->
