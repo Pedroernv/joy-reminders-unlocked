@@ -668,6 +668,21 @@ body {
 </style>
 </head>
 <body>
+<!-- PWA install banner -->
+<div id="pwa-install-banner" style="display:none;position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:var(--header-bg);color:var(--text-light);border-radius:var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,.3);padding:14px 16px;font-family:'Outfit',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="width:42px;height:42px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:20px;">S</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:15px;">Instalar SmartSchoolPro</div>
+      <div id="pwa-install-text" style="font-size:12.5px;opacity:.85;margin-top:2px;line-height:1.35;">Adicione o app à tela inicial para acesso rápido e notificações offline.</div>
+    </div>
+    <button id="pwa-install-close" aria-label="Fechar" style="background:transparent;border:none;color:var(--text-light);font-size:18px;cursor:pointer;padding:4px 8px;">&times;</button>
+  </div>
+  <div id="pwa-install-actions" style="display:flex;gap:8px;margin-top:10px;">
+    <button id="pwa-install-btn" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:10px 14px;font-weight:600;cursor:pointer;font-family:inherit;">Instalar</button>
+    <button id="pwa-install-later" style="background:transparent;color:var(--text-light);border:1px solid rgba(255,255,255,.3);border-radius:var(--radius);padding:10px 14px;font-weight:500;cursor:pointer;font-family:inherit;">Mais tarde</button>
+  </div>
+</div>
 <div class="phone" id="phone">
 
   <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
@@ -2238,6 +2253,70 @@ registerSW();
 // Re-schedule background notifications on key events
 window.addEventListener('focus', () => scheduleBackgroundNotifications());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState==='hidden') scheduleBackgroundNotifications(); });
+
+/* ══════════════════════════════════════════
+   PWA INSTALL PROMPT
+════════════════════════════════════════════ */
+(function(){
+  const banner = document.getElementById('pwa-install-banner');
+  if (!banner) return;
+  const btnInstall = document.getElementById('pwa-install-btn');
+  const btnLater   = document.getElementById('pwa-install-later');
+  const btnClose   = document.getElementById('pwa-install-close');
+  const actions    = document.getElementById('pwa-install-actions');
+  const textEl     = document.getElementById('pwa-install-text');
+
+  const DISMISS_KEY = 'ssp-pwa-dismissed';
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+
+  if (isStandalone || isInIframe || isPreviewHost) return;
+
+  const dismissedAt = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+  // Re-show after 7 days
+  if (dismissedAt && (Date.now() - dismissedAt) < 7*24*60*60*1000) return;
+
+  let deferredPrompt = null;
+
+  function showBanner(){ banner.style.display = 'block'; }
+  function hideBanner(persist){
+    banner.style.display = 'none';
+    if (persist) localStorage.setItem(DISMISS_KEY, String(Date.now()));
+  }
+
+  btnClose.addEventListener('click', () => hideBanner(true));
+  btnLater.addEventListener('click', () => hideBanner(true));
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showBanner();
+  });
+
+  btnInstall.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch {}
+    deferredPrompt = null;
+    hideBanner(true);
+  });
+
+  window.addEventListener('appinstalled', () => hideBanner(true));
+
+  // iOS Safari: no beforeinstallprompt — show manual instructions
+  if (isIOS && isSafari) {
+    textEl.innerHTML = 'Toque em <i class="fa-regular fa-square-arrow-up"></i> <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.';
+    actions.innerHTML = '';
+    const ok = document.createElement('button');
+    ok.textContent = 'Entendi';
+    ok.style.cssText = 'flex:1;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:10px 14px;font-weight:600;cursor:pointer;font-family:inherit;';
+    ok.addEventListener('click', () => hideBanner(true));
+    actions.appendChild(ok);
+    setTimeout(showBanner, 1500);
+  }
+})();
 </script>
 </body>
 </html>
