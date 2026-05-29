@@ -650,6 +650,7 @@ body {
       <div class="d-section">Conta</div>
       <div class="d-item" id="nav-progress" onclick="navTo('progress')"><i class="fas fa-chart-bar d-icon"></i> Progresso</div>
       <div class="d-item" id="nav-calendar" onclick="navTo('calendar')"><i class="fas fa-calendar-days d-icon"></i> Calendário</div>
+      <div class="d-item" id="nav-grades" onclick="navTo('grades')"><i class="fas fa-square-root-variable d-icon"></i> Notas</div>
       <div class="d-item" onclick="askClearData()"><i class="fas fa-trash d-icon"></i> Limpar Dados</div>
     </nav>
     <div class="drawer-footer"><i class="fas fa-graduation-cap"></i> SmartSchoolPro v4.0 · 2025</div>
@@ -677,6 +678,11 @@ body {
   <div class="header" id="header-calendar" style="display:none;">
     <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
     <div class="header-title">Calendário</div>
+    <div style="width:36px;"></div>
+  </div>
+  <div class="header" id="header-grades" style="display:none;">
+    <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
+    <div class="header-title">Notas &amp; Médias</div>
     <div style="width:36px;"></div>
   </div>
 
@@ -801,6 +807,17 @@ body {
       <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
       <div class="section-header" style="margin-top:14px;"><div class="section-title" id="cal-day-title">Aulas do dia</div></div>
       <div id="cal-day-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- ══ GRADES ══ -->
+    <div class="screen" id="screen-grades">
+      <div class="section-header"><div class="section-title">Resumo geral</div></div>
+      <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div class="section-header">
+        <div class="section-title">Por disciplina</div>
+        <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;">Toque para abrir</div>
+      </div>
+      <div id="grades-list" style="display:flex;flex-direction:column;gap:10px;"></div>
     </div>
 
   </div><!-- /screen-wrapper -->
