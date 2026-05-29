@@ -1552,7 +1552,7 @@ function removeSessionRow(idx) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  ['home','form','progress','calendar','grades'].forEach(k=>{
+  ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
     const h=document.getElementById('header-'+k); if(h) h.style.display=(id===k?'flex':'none');
   });
   document.querySelectorAll('.d-item').forEach(el=>el.classList.remove('active'));
@@ -1560,6 +1560,7 @@ function showScreen(id) {
   if(id==='progress') renderProgress();
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
+  if(id==='tasks')    renderTasks();
 }
 
 function startAdd() {
