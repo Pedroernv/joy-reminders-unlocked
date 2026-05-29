@@ -1419,13 +1419,14 @@ function removeSessionRow(idx) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  ['home','form','progress','calendar'].forEach(k=>{
+  ['home','form','progress','calendar','grades'].forEach(k=>{
     const h=document.getElementById('header-'+k); if(h) h.style.display=(id===k?'flex':'none');
   });
   document.querySelectorAll('.d-item').forEach(el=>el.classList.remove('active'));
   const nav=document.getElementById('nav-'+id); if(nav) nav.classList.add('active');
   if(id==='progress') renderProgress();
   if(id==='calendar') renderCalendar();
+  if(id==='grades')   renderGrades();
 }
 
 function startAdd() {
