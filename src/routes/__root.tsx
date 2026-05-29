@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "SmartChoPro" },
+      { name: "description", content: "an app that helps you to organize and lead with your life school, gestioning tasks for home, remindes you when you gotta go to the school to study with alarm, n" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "SmartChoPro" },
+      { property: "og:description", content: "an app that helps you to organize and lead with your life school, gestioning tasks for home, remindes you when you gotta go to the school to study with alarm, n" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "SmartChoPro" },
+      { name: "twitter:description", content: "an app that helps you to organize and lead with your life school, gestioning tasks for home, remindes you when you gotta go to the school to study with alarm, n" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d6ff8140-f082-4751-8392-1c672ec182bd" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d6ff8140-f082-4751-8392-1c672ec182bd" },
     ],
     links: [
       {
