@@ -2032,6 +2032,201 @@ function removeGrade(name, id){
 function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s){ return escHtml(s); }
 
+/* ── Grade modal ── */
+function openGradeModal(presetSubject){
+  if (!subjects.length){ showToast('Cadastre uma disciplina primeiro!'); return; }
+  const sel = document.getElementById('grade-subj');
+  sel.innerHTML = subjects.map(s => `<option value="${escAttr(s.name)}">${escHtml(s.name)}</option>`).join('');
+  if (presetSubject) sel.value = presetSubject;
+  document.getElementById('grade-label').value  = '';
+  document.getElementById('grade-value').value  = '';
+  document.getElementById('grade-max').value    = '10';
+  document.getElementById('grade-weight').value = '1';
+  document.getElementById('modal-grade').classList.add('open');
+  setTimeout(()=>document.getElementById('grade-label').focus(), 80);
+}
+function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); }
+function submitGradeModal(){
+  const name   = document.getElementById('grade-subj').value;
+  const label  = document.getElementById('grade-label').value.trim() || 'Avaliação';
+  const value  = parseFloat(document.getElementById('grade-value').value);
+  const max    = parseFloat(document.getElementById('grade-max').value) || 10;
+  const weight = parseFloat(document.getElementById('grade-weight').value) || 1;
+  if (!name) { showToast('Escolha uma disciplina'); return; }
+  if (isNaN(value)) { showToast('Informe a nota'); return; }
+  if (value < 0 || value > max) { showToast(`Nota deve estar entre 0 e ${max}`); return; }
+  addGrade(name, { label, value, max, weight });
+  closeGradeModal();
+}
+
+/* ══════════════════════════════════════════
+   TASKS (Tarefas & Trabalhos)
+══════════════════════════════════════════ */
+const TASKS_KEY = 'ssp_v4_tasks';
+let editingTaskId = null;
+
+function loadTasks(){
+  try { const a = JSON.parse(localStorage.getItem(TASKS_KEY)); return Array.isArray(a) ? a : []; }
+  catch { return []; }
+}
+function saveTasks(arr){ localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+
+function todayISO(){
+  const d = new Date(); d.setHours(0,0,0,0);
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function daysUntil(iso){
+  if (!iso) return null;
+  const [y,m,d] = iso.split('-').map(Number);
+  const target = new Date(y, m-1, d); target.setHours(0,0,0,0);
+  const today  = new Date(); today.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+function fmtDueLabel(iso){
+  const d = daysUntil(iso);
+  if (d == null) return '';
+  if (d <  0) return `Atrasada (${Math.abs(d)}d)`;
+  if (d === 0) return 'Hoje';
+  if (d === 1) return 'Amanhã';
+  if (d <= 6) return `Em ${d} dias`;
+  const [y,m,da] = iso.split('-');
+  return `${da}/${m}/${y.slice(2)}`;
+}
+function dueClass(iso, done){
+  if (done || !iso) return '';
+  const d = daysUntil(iso);
+  if (d < 0) return 'late';
+  if (d <= 1) return 'soon';
+  return '';
+}
+
+function openTaskModal(taskId){
+  editingTaskId = taskId || null;
+  const subjSel = document.getElementById('task-subj');
+  subjSel.innerHTML = '<option value="">— Nenhuma —</option>' +
+    subjects.map(s => `<option value="${escAttr(s.name)}">${escHtml(s.name)}</option>`).join('');
+  const t = taskId ? loadTasks().find(x=>x.id===taskId) : null;
+  document.getElementById('task-modal-title').textContent = t ? 'Editar Tarefa' : 'Nova Tarefa';
+  document.getElementById('task-title').value = t ? t.title : '';
+  document.getElementById('task-type').value  = t ? (t.type || 'Tarefa') : 'Tarefa';
+  document.getElementById('task-due').value   = t ? (t.due || '') : '';
+  document.getElementById('task-subj').value  = t ? (t.subject || '') : '';
+  document.getElementById('task-notes').value = t ? (t.notes || '') : '';
+  document.getElementById('modal-task').classList.add('open');
+  setTimeout(()=>document.getElementById('task-title').focus(), 80);
+}
+function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; }
+function submitTaskModal(){
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('Informe o título'); return; }
+  const type    = document.getElementById('task-type').value;
+  const due     = document.getElementById('task-due').value || '';
+  const subject = document.getElementById('task-subj').value || '';
+  const notes   = document.getElementById('task-notes').value.trim();
+  const tasks   = loadTasks();
+  if (editingTaskId){
+    const t = tasks.find(x => x.id === editingTaskId);
+    if (t) Object.assign(t, { title, type, due, subject, notes });
+  } else {
+    tasks.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title, type, due, subject, notes, done:false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+  saveTasks(tasks);
+  closeTaskModal();
+  renderTasks();
+  showToast(editingTaskId ? 'Tarefa atualizada!' : 'Tarefa adicionada!');
+}
+function toggleTaskDone(id){
+  const tasks = loadTasks();
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  t.done = !t.done;
+  if (t.done) t.doneAt = new Date().toISOString();
+  saveTasks(tasks); renderTasks();
+}
+function deleteTask(id){
+  saveTasks(loadTasks().filter(x => x.id !== id)); renderTasks();
+}
+
+function renderTasks(){
+  const emptyEl   = document.getElementById('tasks-empty');
+  const contentEl = document.getElementById('tasks-content');
+  const summary   = document.getElementById('tasks-summary');
+  const pendBox   = document.getElementById('tasks-pending');
+  const doneBox   = document.getElementById('tasks-done');
+  const tasks     = loadTasks();
+
+  if (!tasks.length){
+    contentEl.style.display = 'none';
+    summary.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display   = 'none';
+  contentEl.style.display = 'block';
+
+  const pending = tasks.filter(t => !t.done);
+  const done    = tasks.filter(t =>  t.done);
+  const overdue = pending.filter(t => t.due && daysUntil(t.due) < 0).length;
+  const dueSoon = pending.filter(t => t.due && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 2).length;
+
+  summary.innerHTML = `
+    <div class="prog-stat"><div class="v">${pending.length}</div><div class="l">Pendentes</div></div>
+    <div class="prog-stat"><div class="v" style="color:${overdue?'#b02a2a':''};">${overdue}</div><div class="l">Atrasadas</div></div>
+    <div class="prog-stat"><div class="v" style="color:${dueSoon?'#9a6a10':''};">${dueSoon}</div><div class="l">Próximas (≤2d)</div></div>
+    <div class="prog-stat"><div class="v">${done.length}</div><div class="l">Concluídas</div></div>
+  `;
+
+  const sortPend = (a,b) => {
+    const da = a.due ? daysUntil(a.due) : 9999;
+    const db = b.due ? daysUntil(b.due) : 9999;
+    return da - db;
+  };
+  const sortDone = (a,b) => (b.doneAt||'').localeCompare(a.doneAt||'');
+
+  document.getElementById('tasks-pending-title').textContent = `Pendentes (${pending.length})`;
+  pendBox.innerHTML = pending.length
+    ? pending.sort(sortPend).map(renderTaskCard).join('')
+    : '<div class="empty-mini">Tudo em dia! 🎉</div>';
+  doneBox.innerHTML = done.length
+    ? done.sort(sortDone).slice(0,20).map(renderTaskCard).join('')
+    : '<div class="empty-mini">Nenhuma tarefa concluída ainda.</div>';
+
+  document.querySelectorAll('[data-task-toggle]').forEach(el => {
+    el.onclick = () => toggleTaskDone(el.getAttribute('data-task-toggle'));
+  });
+  document.querySelectorAll('[data-task-edit]').forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.closest('[data-task-toggle]') || e.target.closest('[data-task-del]')) return;
+      openTaskModal(el.getAttribute('data-task-edit'));
+    };
+  });
+  document.querySelectorAll('[data-task-del]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); deleteTask(el.getAttribute('data-task-del')); };
+  });
+}
+function renderTaskCard(t){
+  const dc = dueClass(t.due, t.done);
+  return `
+    <div class="task-card ${t.done?'done':''} ${dc==='late'?'overdue':''}" data-task-edit="${t.id}">
+      <div class="task-check ${t.done?'checked':''}" data-task-toggle="${t.id}" title="Marcar"><i class="fas fa-check"></i></div>
+      <div class="task-body">
+        <div class="task-title">${escHtml(t.title)}</div>
+        <div class="task-meta">
+          <span class="task-tag type"><i class="fas fa-folder"></i> ${escHtml(t.type||'Tarefa')}</span>
+          ${t.subject ? `<span class="task-tag subj"><i class="fas fa-book"></i> ${escHtml(t.subject)}</span>` : ''}
+          ${t.due ? `<span class="task-tag due ${dc}"><i class="fas fa-calendar"></i> ${escHtml(fmtDueLabel(t.due))}</span>` : ''}
+        </div>
+        ${t.notes ? `<div class="task-notes">${escHtml(t.notes)}</div>` : ''}
+      </div>
+      <button class="task-x" data-task-del="${t.id}" title="Excluir"><i class="fas fa-trash"></i></button>
+    </div>
+  `;
+}
+
 /* ══════════════════════════════════════════
    INIT (continued)
 ══════════════════════════════════════════ */
