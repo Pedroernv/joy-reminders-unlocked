@@ -637,6 +637,32 @@ body {
 .gr-bar { height:6px; background:rgba(0,0,0,.08); border-radius:4px; overflow:hidden; margin-top:8px; }
 .gr-bar > div { height:100%; border-radius:4px; transition:width .3s; }
 .gr-empty { text-align:center; color:var(--text-muted); font-size:.78rem; font-weight:700; padding:10px 0; }
+
+/* EMPTY STATE */
+.empty-state { text-align:center; padding:40px 20px; }
+.empty-ic { width:72px; height:72px; margin:0 auto 14px; border-radius:50%; background:rgba(91,127,166,.15); display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:1.8rem; }
+.empty-title { font-size:1.05rem; font-weight:900; color:var(--text-dark); margin-bottom:6px; }
+.empty-desc { font-size:.82rem; color:var(--text-muted); font-weight:600; line-height:1.5; max-width:260px; margin:0 auto; }
+
+/* TASKS */
+.task-card { background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:var(--radius); padding:10px 12px; display:flex; align-items:flex-start; gap:10px; box-shadow:var(--shadow-item); }
+.task-card.done { opacity:.62; }
+.task-card.overdue { border-color:#c83737; background:rgba(200,55,55,.06); }
+.task-check { width:22px; height:22px; min-width:22px; border-radius:6px; border:2px solid var(--item-border); display:flex; align-items:center; justify-content:center; cursor:pointer; background:white; color:transparent; font-size:.7rem; margin-top:2px; transition:all .15s; }
+.task-check.checked { background:var(--accent); border-color:var(--accent); color:white; }
+.task-body { flex:1; min-width:0; }
+.task-title { font-size:.88rem; font-weight:800; color:var(--text-dark); line-height:1.3; word-break:break-word; }
+.task-card.done .task-title { text-decoration:line-through; }
+.task-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:5px; font-size:.7rem; font-weight:700; }
+.task-tag { padding:2px 7px; border-radius:10px; background:rgba(0,0,0,.06); color:var(--text-muted); display:inline-flex; align-items:center; gap:4px; }
+.task-tag.type { background:rgba(91,127,166,.18); color:var(--accent); }
+.task-tag.subj { background:rgba(45,58,74,.13); color:var(--text-dark); }
+.task-tag.due  { background:rgba(45,58,74,.1); color:var(--text-dark); }
+.task-tag.due.soon { background:rgba(217,152,37,.22); color:#9a6a10; }
+.task-tag.due.late { background:rgba(200,55,55,.18); color:#b02a2a; }
+.task-notes { font-size:.74rem; color:var(--text-muted); margin-top:5px; line-height:1.4; white-space:pre-wrap; }
+.task-x { background:transparent; border:none; color:#b02a2a; cursor:pointer; padding:4px 6px; font-size:.85rem; align-self:flex-start; }
+.empty-mini { text-align:center; color:var(--text-muted); font-size:.78rem; font-weight:700; padding:14px 0; }
 </style>
 </head>
 <body>
@@ -681,6 +707,7 @@ body {
       <div class="d-item" id="nav-progress" onclick="navTo('progress')"><i class="fas fa-chart-bar d-icon"></i> Progresso</div>
       <div class="d-item" id="nav-calendar" onclick="navTo('calendar')"><i class="fas fa-calendar-days d-icon"></i> Calendário</div>
       <div class="d-item" id="nav-grades" onclick="navTo('grades')"><i class="fas fa-square-root-variable d-icon"></i> Notas</div>
+      <div class="d-item" id="nav-tasks" onclick="navTo('tasks')"><i class="fas fa-list-check d-icon"></i> Tarefas</div>
       <div class="d-item" onclick="askClearData()"><i class="fas fa-trash d-icon"></i> Limpar Dados</div>
     </nav>
     <div class="drawer-footer"><i class="fas fa-graduation-cap"></i> SmartSchoolPro v4.0 · 2025</div>
@@ -713,7 +740,12 @@ body {
   <div class="header" id="header-grades" style="display:none;">
     <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
     <div class="header-title">Notas &amp; Médias</div>
-    <div style="width:36px;"></div>
+    <button class="header-icon-btn" onclick="openGradeModal()"><i class="fas fa-plus"></i></button>
+  </div>
+  <div class="header" id="header-tasks" style="display:none;">
+    <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
+    <div class="header-title">Tarefas &amp; Trabalhos</div>
+    <button class="header-icon-btn" onclick="openTaskModal()"><i class="fas fa-plus"></i></button>
   </div>
 
   <!-- <div class="status-bar" id="status-bar">
@@ -841,13 +873,48 @@ body {
 
     <!-- ══ GRADES ══ -->
     <div class="screen" id="screen-grades">
-      <div class="section-header"><div class="section-title">Resumo geral</div></div>
-      <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
-      <div class="section-header">
-        <div class="section-title">Por disciplina</div>
-        <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;">Toque para abrir</div>
+      <div id="grades-empty" class="empty-state" style="display:none;">
+        <div class="empty-ic"><i class="fas fa-square-root-variable"></i></div>
+        <div class="empty-title">Nenhuma nota registrada</div>
+        <div class="empty-desc">Comece a acompanhar seu desempenho lançando a primeira nota de uma disciplina.</div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openGradeModal()">
+          <i class="fas fa-plus"></i> Adicionar primeira nota
+        </button>
       </div>
-      <div id="grades-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="grades-content" style="display:none;">
+        <div class="section-header"><div class="section-title">Resumo geral</div></div>
+        <div id="grades-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <div class="section-header">
+          <div class="section-title">Por disciplina</div>
+          <div style="font-size:.7rem;color:var(--text-muted);font-weight:700;">Toque para abrir</div>
+        </div>
+        <div id="grades-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openGradeModal()">
+          <i class="fas fa-plus"></i> Adicionar nova nota
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ TASKS ══ -->
+    <div class="screen" id="screen-tasks">
+      <div id="tasks-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div id="tasks-empty" class="empty-state" style="display:none;">
+        <div class="empty-ic"><i class="fas fa-list-check"></i></div>
+        <div class="empty-title">Sem tarefas por aqui</div>
+        <div class="empty-desc">Adicione tarefas de casa, trabalhos e provas para acompanhar prazos e não perder nada.</div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openTaskModal()">
+          <i class="fas fa-plus"></i> Adicionar primeira tarefa
+        </button>
+      </div>
+      <div id="tasks-content" style="display:none;">
+        <div class="section-header"><div class="section-title" id="tasks-pending-title">Pendentes</div></div>
+        <div id="tasks-pending" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div class="section-header" style="margin-top:14px;"><div class="section-title">Concluídas</div></div>
+        <div id="tasks-done" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn-save" style="margin-top:14px;" onclick="openTaskModal()">
+          <i class="fas fa-plus"></i> Nova tarefa
+        </button>
+      </div>
     </div>
 
   </div><!-- /screen-wrapper -->
@@ -894,6 +961,72 @@ body {
       <i class="fas fa-folder-open"></i> Usar meu próprio áudio (MP3/OGG)
       <input type="file" accept="audio/*" id="sound-upload-input" style="display:none" onchange="handleSoundUpload(event)">
     </label>
+  </div>
+</div>
+
+<!-- GRADE MODAL -->
+<div class="modal-overlay" id="modal-grade">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota</div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <label class="form-label"><i class="fas fa-book"></i> Disciplina</label>
+      <select class="form-select" id="grade-subj"></select>
+      <label class="form-label"><i class="fas fa-tag"></i> Avaliação</label>
+      <input class="form-input" id="grade-label" maxlength="40" placeholder="Ex: Prova 1, Trabalho..." />
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-star"></i> Nota</label>
+          <input class="form-input" id="grade-value" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0–10" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-arrow-up"></i> Máx</label>
+          <input class="form-input" id="grade-max" type="number" inputmode="decimal" step="0.1" min="0.1" value="10" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-weight-hanging"></i> Peso</label>
+          <input class="form-input" id="grade-weight" type="number" inputmode="decimal" step="0.1" min="0.1" value="1" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeGradeModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitGradeModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="modal-task">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span></div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <label class="form-label"><i class="fas fa-pen"></i> Título</label>
+      <input class="form-input" id="task-title" maxlength="80" placeholder="Ex: Lista de exercícios cap. 3" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-folder"></i> Tipo</label>
+          <select class="form-select" id="task-type">
+            <option value="Tarefa">Tarefa de casa</option>
+            <option value="Trabalho">Trabalho</option>
+            <option value="Prova">Prova</option>
+            <option value="Projeto">Projeto</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-calendar"></i> Prazo</label>
+          <input class="form-input" id="task-due" type="date" />
+        </div>
+      </div>
+      <label class="form-label"><i class="fas fa-book"></i> Disciplina (opcional)</label>
+      <select class="form-select" id="task-subj"><option value="">— Nenhuma —</option></select>
+      <label class="form-label"><i class="fas fa-note-sticky"></i> Notas (opcional)</label>
+      <textarea class="form-input" id="task-notes" rows="2" maxlength="280" placeholder="Detalhes, páginas, links..." style="resize:vertical;font-family:'Outfit',sans-serif;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeTaskModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitTaskModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -1419,7 +1552,7 @@ function removeSessionRow(idx) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  ['home','form','progress','calendar','grades'].forEach(k=>{
+  ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
     const h=document.getElementById('header-'+k); if(h) h.style.display=(id===k?'flex':'none');
   });
   document.querySelectorAll('.d-item').forEach(el=>el.classList.remove('active'));
@@ -1427,6 +1560,7 @@ function showScreen(id) {
   if(id==='progress') renderProgress();
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
+  if(id==='tasks')    renderTasks();
 }
 
 function startAdd() {
@@ -1780,16 +1914,23 @@ function avgLabel(avg){
 function fmtAvg(v){ return v==null ? '—' : v.toFixed(1).replace('.',','); }
 
 function renderGrades(){
-  const list = document.getElementById('grades-list');
-  const summary = document.getElementById('grades-summary');
-  if (!subjects.length){
-    summary.innerHTML = '';
-    list.innerHTML = '<div class="gr-empty">Cadastre uma disciplina primeiro para lançar notas.</div>';
+  const emptyEl   = document.getElementById('grades-empty');
+  const contentEl = document.getElementById('grades-content');
+  const list      = document.getElementById('grades-list');
+  const summary   = document.getElementById('grades-summary');
+  const open      = loadGradesOpen();
+  const withGrades = subjects
+    .map(s => ({ name:s.name, stats: computeStats(gradesFor(s.name)) }))
+    .filter(p => p.stats.count > 0);
+
+  if (!withGrades.length){
+    contentEl.style.display = 'none';
+    emptyEl.style.display   = 'block';
     return;
   }
-  const open = loadGradesOpen();
-  const perSubj = subjects.map(s => ({ name:s.name, stats: computeStats(gradesFor(s.name)) }));
-  const withGrades = perSubj.filter(p => p.stats.count > 0);
+  emptyEl.style.display   = 'none';
+  contentEl.style.display = 'block';
+
   const globalAvg = withGrades.length
     ? withGrades.reduce((a,b)=>a+b.stats.weighted,0) / withGrades.length
     : null;
@@ -1799,15 +1940,16 @@ function renderGrades(){
 
   summary.innerHTML = `
     <div class="prog-stat"><div class="v">${fmtAvg(globalAvg)}</div><div class="l">Média geral</div></div>
-    <div class="prog-stat"><div class="v">${approved}/${perSubj.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
+    <div class="prog-stat"><div class="v">${approved}/${withGrades.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
     <div class="prog-stat"><div class="v">${best ? best.name.split(' ')[0] : '—'}</div><div class="l">Melhor: ${best?fmtAvg(best.stats.weighted):'—'}</div></div>
     <div class="prog-stat"><div class="v">${worst && worst!==best ? worst.name.split(' ')[0] : '—'}</div><div class="l">Atenção: ${worst&&worst!==best?fmtAvg(worst.stats.weighted):'—'}</div></div>
   `;
 
   list.innerHTML = '';
-  subjects.forEach((subj) => {
+  withGrades.forEach((entry) => {
+    const subj  = { name: entry.name };
     const items = gradesFor(subj.name);
-    const stats = computeStats(items);
+    const stats = entry.stats;
     const cls   = avgClass(stats.weighted);
     const card  = document.createElement('div');
     card.className = 'gr-card' + (open[subj.name] ? ' open' : '');
@@ -1833,7 +1975,7 @@ function renderGrades(){
           ${stats.count} nota${stats.count!==1?'s':''} · Status: <b style="color:var(--text-dark);">${avgLabel(stats.weighted)}</b>
         </div>
         <div class="gr-list">
-          ${items.length ? items.map(it=>`
+          ${items.map(it=>`
             <div class="gr-item">
               <div>
                 <div class="lbl">${escHtml(it.label||'Avaliação')}</div>
@@ -1842,15 +1984,11 @@ function renderGrades(){
               <div class="val">${(+it.value).toFixed(1).replace('.',',')}/${(+it.max).toFixed(0)}</div>
               <button class="x" data-gid="${it.id}" data-sname="${escAttr(subj.name)}" title="Remover"><i class="fas fa-xmark"></i></button>
             </div>
-          `).join('') : '<div class="gr-empty">Nenhuma nota ainda.</div>'}
+          `).join('')}
         </div>
-        <div class="gr-add" data-sname="${escAttr(subj.name)}">
-          <input class="g-lbl" placeholder="Ex: Prova 1, Trabalho..." maxlength="40" />
-          <input class="g-val" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Nota" />
-          <input class="g-max" type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Máx" value="10" />
-          <input class="g-wt"  type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Peso" value="1" style="grid-column:1 / span 1;" />
-          <button class="gr-add-btn" style="grid-column:2 / -1;"><i class="fas fa-plus"></i> Adicionar nota</button>
-        </div>
+        <button class="gr-add-btn" style="margin-top:10px;" data-sname-add="${escAttr(subj.name)}">
+          <i class="fas fa-plus"></i> Adicionar nota nesta disciplina
+        </button>
       </div>
     `;
     list.appendChild(card);
@@ -1868,18 +2006,8 @@ function renderGrades(){
   list.querySelectorAll('.x').forEach(btn=>{
     btn.onclick = () => removeGrade(btn.getAttribute('data-sname'), btn.getAttribute('data-gid'));
   });
-  list.querySelectorAll('.gr-add-btn').forEach(btn=>{
-    btn.onclick = () => {
-      const wrap = btn.parentElement;
-      const name = wrap.getAttribute('data-sname');
-      const label = wrap.querySelector('.g-lbl').value.trim() || 'Avaliação';
-      const value = parseFloat(wrap.querySelector('.g-val').value);
-      const max   = parseFloat(wrap.querySelector('.g-max').value) || 10;
-      const weight= parseFloat(wrap.querySelector('.g-wt').value)  || 1;
-      if (isNaN(value)) { showToast('Informe a nota'); return; }
-      if (value < 0 || value > max) { showToast(`Nota deve estar entre 0 e ${max}`); return; }
-      addGrade(name, { label, value, max, weight });
-    };
+  list.querySelectorAll('[data-sname-add]').forEach(btn=>{
+    btn.onclick = () => openGradeModal(btn.getAttribute('data-sname-add'));
   });
 }
 
@@ -1903,6 +2031,201 @@ function removeGrade(name, id){
 }
 function escHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escAttr(s){ return escHtml(s); }
+
+/* ── Grade modal ── */
+function openGradeModal(presetSubject){
+  if (!subjects.length){ showToast('Cadastre uma disciplina primeiro!'); return; }
+  const sel = document.getElementById('grade-subj');
+  sel.innerHTML = subjects.map(s => `<option value="${escAttr(s.name)}">${escHtml(s.name)}</option>`).join('');
+  if (presetSubject) sel.value = presetSubject;
+  document.getElementById('grade-label').value  = '';
+  document.getElementById('grade-value').value  = '';
+  document.getElementById('grade-max').value    = '10';
+  document.getElementById('grade-weight').value = '1';
+  document.getElementById('modal-grade').classList.add('open');
+  setTimeout(()=>document.getElementById('grade-label').focus(), 80);
+}
+function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); }
+function submitGradeModal(){
+  const name   = document.getElementById('grade-subj').value;
+  const label  = document.getElementById('grade-label').value.trim() || 'Avaliação';
+  const value  = parseFloat(document.getElementById('grade-value').value);
+  const max    = parseFloat(document.getElementById('grade-max').value) || 10;
+  const weight = parseFloat(document.getElementById('grade-weight').value) || 1;
+  if (!name) { showToast('Escolha uma disciplina'); return; }
+  if (isNaN(value)) { showToast('Informe a nota'); return; }
+  if (value < 0 || value > max) { showToast(`Nota deve estar entre 0 e ${max}`); return; }
+  addGrade(name, { label, value, max, weight });
+  closeGradeModal();
+}
+
+/* ══════════════════════════════════════════
+   TASKS (Tarefas & Trabalhos)
+══════════════════════════════════════════ */
+const TASKS_KEY = 'ssp_v4_tasks';
+let editingTaskId = null;
+
+function loadTasks(){
+  try { const a = JSON.parse(localStorage.getItem(TASKS_KEY)); return Array.isArray(a) ? a : []; }
+  catch { return []; }
+}
+function saveTasks(arr){ localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+
+function todayISO(){
+  const d = new Date(); d.setHours(0,0,0,0);
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function daysUntil(iso){
+  if (!iso) return null;
+  const [y,m,d] = iso.split('-').map(Number);
+  const target = new Date(y, m-1, d); target.setHours(0,0,0,0);
+  const today  = new Date(); today.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+function fmtDueLabel(iso){
+  const d = daysUntil(iso);
+  if (d == null) return '';
+  if (d <  0) return `Atrasada (${Math.abs(d)}d)`;
+  if (d === 0) return 'Hoje';
+  if (d === 1) return 'Amanhã';
+  if (d <= 6) return `Em ${d} dias`;
+  const [y,m,da] = iso.split('-');
+  return `${da}/${m}/${y.slice(2)}`;
+}
+function dueClass(iso, done){
+  if (done || !iso) return '';
+  const d = daysUntil(iso);
+  if (d < 0) return 'late';
+  if (d <= 1) return 'soon';
+  return '';
+}
+
+function openTaskModal(taskId){
+  editingTaskId = taskId || null;
+  const subjSel = document.getElementById('task-subj');
+  subjSel.innerHTML = '<option value="">— Nenhuma —</option>' +
+    subjects.map(s => `<option value="${escAttr(s.name)}">${escHtml(s.name)}</option>`).join('');
+  const t = taskId ? loadTasks().find(x=>x.id===taskId) : null;
+  document.getElementById('task-modal-title').textContent = t ? 'Editar Tarefa' : 'Nova Tarefa';
+  document.getElementById('task-title').value = t ? t.title : '';
+  document.getElementById('task-type').value  = t ? (t.type || 'Tarefa') : 'Tarefa';
+  document.getElementById('task-due').value   = t ? (t.due || '') : '';
+  document.getElementById('task-subj').value  = t ? (t.subject || '') : '';
+  document.getElementById('task-notes').value = t ? (t.notes || '') : '';
+  document.getElementById('modal-task').classList.add('open');
+  setTimeout(()=>document.getElementById('task-title').focus(), 80);
+}
+function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; }
+function submitTaskModal(){
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('Informe o título'); return; }
+  const type    = document.getElementById('task-type').value;
+  const due     = document.getElementById('task-due').value || '';
+  const subject = document.getElementById('task-subj').value || '';
+  const notes   = document.getElementById('task-notes').value.trim();
+  const tasks   = loadTasks();
+  if (editingTaskId){
+    const t = tasks.find(x => x.id === editingTaskId);
+    if (t) Object.assign(t, { title, type, due, subject, notes });
+  } else {
+    tasks.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title, type, due, subject, notes, done:false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+  saveTasks(tasks);
+  closeTaskModal();
+  renderTasks();
+  showToast(editingTaskId ? 'Tarefa atualizada!' : 'Tarefa adicionada!');
+}
+function toggleTaskDone(id){
+  const tasks = loadTasks();
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  t.done = !t.done;
+  if (t.done) t.doneAt = new Date().toISOString();
+  saveTasks(tasks); renderTasks();
+}
+function deleteTask(id){
+  saveTasks(loadTasks().filter(x => x.id !== id)); renderTasks();
+}
+
+function renderTasks(){
+  const emptyEl   = document.getElementById('tasks-empty');
+  const contentEl = document.getElementById('tasks-content');
+  const summary   = document.getElementById('tasks-summary');
+  const pendBox   = document.getElementById('tasks-pending');
+  const doneBox   = document.getElementById('tasks-done');
+  const tasks     = loadTasks();
+
+  if (!tasks.length){
+    contentEl.style.display = 'none';
+    summary.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display   = 'none';
+  contentEl.style.display = 'block';
+
+  const pending = tasks.filter(t => !t.done);
+  const done    = tasks.filter(t =>  t.done);
+  const overdue = pending.filter(t => t.due && daysUntil(t.due) < 0).length;
+  const dueSoon = pending.filter(t => t.due && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 2).length;
+
+  summary.innerHTML = `
+    <div class="prog-stat"><div class="v">${pending.length}</div><div class="l">Pendentes</div></div>
+    <div class="prog-stat"><div class="v" style="color:${overdue?'#b02a2a':''};">${overdue}</div><div class="l">Atrasadas</div></div>
+    <div class="prog-stat"><div class="v" style="color:${dueSoon?'#9a6a10':''};">${dueSoon}</div><div class="l">Próximas (≤2d)</div></div>
+    <div class="prog-stat"><div class="v">${done.length}</div><div class="l">Concluídas</div></div>
+  `;
+
+  const sortPend = (a,b) => {
+    const da = a.due ? daysUntil(a.due) : 9999;
+    const db = b.due ? daysUntil(b.due) : 9999;
+    return da - db;
+  };
+  const sortDone = (a,b) => (b.doneAt||'').localeCompare(a.doneAt||'');
+
+  document.getElementById('tasks-pending-title').textContent = `Pendentes (${pending.length})`;
+  pendBox.innerHTML = pending.length
+    ? pending.sort(sortPend).map(renderTaskCard).join('')
+    : '<div class="empty-mini">Tudo em dia! 🎉</div>';
+  doneBox.innerHTML = done.length
+    ? done.sort(sortDone).slice(0,20).map(renderTaskCard).join('')
+    : '<div class="empty-mini">Nenhuma tarefa concluída ainda.</div>';
+
+  document.querySelectorAll('[data-task-toggle]').forEach(el => {
+    el.onclick = () => toggleTaskDone(el.getAttribute('data-task-toggle'));
+  });
+  document.querySelectorAll('[data-task-edit]').forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.closest('[data-task-toggle]') || e.target.closest('[data-task-del]')) return;
+      openTaskModal(el.getAttribute('data-task-edit'));
+    };
+  });
+  document.querySelectorAll('[data-task-del]').forEach(el => {
+    el.onclick = (e) => { e.stopPropagation(); deleteTask(el.getAttribute('data-task-del')); };
+  });
+}
+function renderTaskCard(t){
+  const dc = dueClass(t.due, t.done);
+  return `
+    <div class="task-card ${t.done?'done':''} ${dc==='late'?'overdue':''}" data-task-edit="${t.id}">
+      <div class="task-check ${t.done?'checked':''}" data-task-toggle="${t.id}" title="Marcar"><i class="fas fa-check"></i></div>
+      <div class="task-body">
+        <div class="task-title">${escHtml(t.title)}</div>
+        <div class="task-meta">
+          <span class="task-tag type"><i class="fas fa-folder"></i> ${escHtml(t.type||'Tarefa')}</span>
+          ${t.subject ? `<span class="task-tag subj"><i class="fas fa-book"></i> ${escHtml(t.subject)}</span>` : ''}
+          ${t.due ? `<span class="task-tag due ${dc}"><i class="fas fa-calendar"></i> ${escHtml(fmtDueLabel(t.due))}</span>` : ''}
+        </div>
+        ${t.notes ? `<div class="task-notes">${escHtml(t.notes)}</div>` : ''}
+      </div>
+      <button class="task-x" data-task-del="${t.id}" title="Excluir"><i class="fas fa-trash"></i></button>
+    </div>
+  `;
+}
 
 /* ══════════════════════════════════════════
    INIT (continued)
