@@ -681,6 +681,7 @@ body {
       <div class="d-item" id="nav-progress" onclick="navTo('progress')"><i class="fas fa-chart-bar d-icon"></i> Progresso</div>
       <div class="d-item" id="nav-calendar" onclick="navTo('calendar')"><i class="fas fa-calendar-days d-icon"></i> Calendário</div>
       <div class="d-item" id="nav-grades" onclick="navTo('grades')"><i class="fas fa-square-root-variable d-icon"></i> Notas</div>
+      <div class="d-item" id="nav-tasks" onclick="navTo('tasks')"><i class="fas fa-list-check d-icon"></i> Tarefas</div>
       <div class="d-item" onclick="askClearData()"><i class="fas fa-trash d-icon"></i> Limpar Dados</div>
     </nav>
     <div class="drawer-footer"><i class="fas fa-graduation-cap"></i> SmartSchoolPro v4.0 · 2025</div>
@@ -713,7 +714,12 @@ body {
   <div class="header" id="header-grades" style="display:none;">
     <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
     <div class="header-title">Notas &amp; Médias</div>
-    <div style="width:36px;"></div>
+    <button class="header-icon-btn" onclick="openGradeModal()"><i class="fas fa-plus"></i></button>
+  </div>
+  <div class="header" id="header-tasks" style="display:none;">
+    <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
+    <div class="header-title">Tarefas &amp; Trabalhos</div>
+    <button class="header-icon-btn" onclick="openTaskModal()"><i class="fas fa-plus"></i></button>
   </div>
 
   <!-- <div class="status-bar" id="status-bar">
