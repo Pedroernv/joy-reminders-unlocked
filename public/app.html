@@ -938,6 +938,72 @@ body {
   </div>
 </div>
 
+<!-- GRADE MODAL -->
+<div class="modal-overlay" id="modal-grade">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota</div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <label class="form-label"><i class="fas fa-book"></i> Disciplina</label>
+      <select class="form-select" id="grade-subj"></select>
+      <label class="form-label"><i class="fas fa-tag"></i> Avaliação</label>
+      <input class="form-input" id="grade-label" maxlength="40" placeholder="Ex: Prova 1, Trabalho..." />
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-star"></i> Nota</label>
+          <input class="form-input" id="grade-value" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0–10" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-arrow-up"></i> Máx</label>
+          <input class="form-input" id="grade-max" type="number" inputmode="decimal" step="0.1" min="0.1" value="10" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-weight-hanging"></i> Peso</label>
+          <input class="form-input" id="grade-weight" type="number" inputmode="decimal" step="0.1" min="0.1" value="1" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeGradeModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitGradeModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="modal-task">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span></div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <label class="form-label"><i class="fas fa-pen"></i> Título</label>
+      <input class="form-input" id="task-title" maxlength="80" placeholder="Ex: Lista de exercícios cap. 3" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-folder"></i> Tipo</label>
+          <select class="form-select" id="task-type">
+            <option value="Tarefa">Tarefa de casa</option>
+            <option value="Trabalho">Trabalho</option>
+            <option value="Prova">Prova</option>
+            <option value="Projeto">Projeto</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-calendar"></i> Prazo</label>
+          <input class="form-input" id="task-due" type="date" />
+        </div>
+      </div>
+      <label class="form-label"><i class="fas fa-book"></i> Disciplina (opcional)</label>
+      <select class="form-select" id="task-subj"><option value="">— Nenhuma —</option></select>
+      <label class="form-label"><i class="fas fa-note-sticky"></i> Notas (opcional)</label>
+      <textarea class="form-input" id="task-notes" rows="2" maxlength="280" placeholder="Detalhes, páginas, links..." style="resize:vertical;font-family:'Outfit',sans-serif;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeTaskModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitTaskModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast"            id="toast"></div>
 <div class="reschedule-toast" id="reschedule-toast"></div>
 
