@@ -1914,16 +1914,23 @@ function avgLabel(avg){
 function fmtAvg(v){ return v==null ? '—' : v.toFixed(1).replace('.',','); }
 
 function renderGrades(){
-  const list = document.getElementById('grades-list');
-  const summary = document.getElementById('grades-summary');
-  if (!subjects.length){
-    summary.innerHTML = '';
-    list.innerHTML = '<div class="gr-empty">Cadastre uma disciplina primeiro para lançar notas.</div>';
+  const emptyEl   = document.getElementById('grades-empty');
+  const contentEl = document.getElementById('grades-content');
+  const list      = document.getElementById('grades-list');
+  const summary   = document.getElementById('grades-summary');
+  const open      = loadGradesOpen();
+  const withGrades = subjects
+    .map(s => ({ name:s.name, stats: computeStats(gradesFor(s.name)) }))
+    .filter(p => p.stats.count > 0);
+
+  if (!withGrades.length){
+    contentEl.style.display = 'none';
+    emptyEl.style.display   = 'block';
     return;
   }
-  const open = loadGradesOpen();
-  const perSubj = subjects.map(s => ({ name:s.name, stats: computeStats(gradesFor(s.name)) }));
-  const withGrades = perSubj.filter(p => p.stats.count > 0);
+  emptyEl.style.display   = 'none';
+  contentEl.style.display = 'block';
+
   const globalAvg = withGrades.length
     ? withGrades.reduce((a,b)=>a+b.stats.weighted,0) / withGrades.length
     : null;
@@ -1933,15 +1940,16 @@ function renderGrades(){
 
   summary.innerHTML = `
     <div class="prog-stat"><div class="v">${fmtAvg(globalAvg)}</div><div class="l">Média geral</div></div>
-    <div class="prog-stat"><div class="v">${approved}/${perSubj.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
+    <div class="prog-stat"><div class="v">${approved}/${withGrades.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
     <div class="prog-stat"><div class="v">${best ? best.name.split(' ')[0] : '—'}</div><div class="l">Melhor: ${best?fmtAvg(best.stats.weighted):'—'}</div></div>
     <div class="prog-stat"><div class="v">${worst && worst!==best ? worst.name.split(' ')[0] : '—'}</div><div class="l">Atenção: ${worst&&worst!==best?fmtAvg(worst.stats.weighted):'—'}</div></div>
   `;
 
   list.innerHTML = '';
-  subjects.forEach((subj) => {
+  withGrades.forEach((entry) => {
+    const subj  = { name: entry.name };
     const items = gradesFor(subj.name);
-    const stats = computeStats(items);
+    const stats = entry.stats;
     const cls   = avgClass(stats.weighted);
     const card  = document.createElement('div');
     card.className = 'gr-card' + (open[subj.name] ? ' open' : '');
@@ -1967,7 +1975,7 @@ function renderGrades(){
           ${stats.count} nota${stats.count!==1?'s':''} · Status: <b style="color:var(--text-dark);">${avgLabel(stats.weighted)}</b>
         </div>
         <div class="gr-list">
-          ${items.length ? items.map(it=>`
+          ${items.map(it=>`
             <div class="gr-item">
               <div>
                 <div class="lbl">${escHtml(it.label||'Avaliação')}</div>
@@ -1976,15 +1984,11 @@ function renderGrades(){
               <div class="val">${(+it.value).toFixed(1).replace('.',',')}/${(+it.max).toFixed(0)}</div>
               <button class="x" data-gid="${it.id}" data-sname="${escAttr(subj.name)}" title="Remover"><i class="fas fa-xmark"></i></button>
             </div>
-          `).join('') : '<div class="gr-empty">Nenhuma nota ainda.</div>'}
+          `).join('')}
         </div>
-        <div class="gr-add" data-sname="${escAttr(subj.name)}">
-          <input class="g-lbl" placeholder="Ex: Prova 1, Trabalho..." maxlength="40" />
-          <input class="g-val" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Nota" />
-          <input class="g-max" type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Máx" value="10" />
-          <input class="g-wt"  type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Peso" value="1" style="grid-column:1 / span 1;" />
-          <button class="gr-add-btn" style="grid-column:2 / -1;"><i class="fas fa-plus"></i> Adicionar nota</button>
-        </div>
+        <button class="gr-add-btn" style="margin-top:10px;" data-sname-add="${escAttr(subj.name)}">
+          <i class="fas fa-plus"></i> Adicionar nota nesta disciplina
+        </button>
       </div>
     `;
     list.appendChild(card);
@@ -2002,18 +2006,8 @@ function renderGrades(){
   list.querySelectorAll('.x').forEach(btn=>{
     btn.onclick = () => removeGrade(btn.getAttribute('data-sname'), btn.getAttribute('data-gid'));
   });
-  list.querySelectorAll('.gr-add-btn').forEach(btn=>{
-    btn.onclick = () => {
-      const wrap = btn.parentElement;
-      const name = wrap.getAttribute('data-sname');
-      const label = wrap.querySelector('.g-lbl').value.trim() || 'Avaliação';
-      const value = parseFloat(wrap.querySelector('.g-val').value);
-      const max   = parseFloat(wrap.querySelector('.g-max').value) || 10;
-      const weight= parseFloat(wrap.querySelector('.g-wt').value)  || 1;
-      if (isNaN(value)) { showToast('Informe a nota'); return; }
-      if (value < 0 || value > max) { showToast(`Nota deve estar entre 0 e ${max}`); return; }
-      addGrade(name, { label, value, max, weight });
-    };
+  list.querySelectorAll('[data-sname-add]').forEach(btn=>{
+    btn.onclick = () => openGradeModal(btn.getAttribute('data-sname-add'));
   });
 }
 
