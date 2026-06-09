@@ -915,13 +915,10 @@ body {
     <!-- ══ TASKS ══ -->
     <div class="screen" id="screen-tasks">
       <div id="tasks-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
-      <div id="tasks-empty" class="empty-state" style="display:none;">
+      <div id="tasks-empty" class="empty-state clickable-empty" style="display:none;" onclick="openTaskModal()">
         <div class="empty-ic"><i class="fas fa-list-check"></i></div>
-        <div class="empty-title">Sem tarefas por aqui</div>
+        <div class="empty-title">Clique aqui para adicionar</div>
         <div class="empty-desc">Adicione tarefas de casa, trabalhos e provas para acompanhar prazos e não perder nada.</div>
-        <button class="btn-save" style="margin-top:14px;" onclick="openTaskModal()">
-          <i class="fas fa-plus"></i> Adicionar primeira tarefa
-        </button>
       </div>
       <div id="tasks-content" style="display:none;">
         
