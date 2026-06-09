@@ -875,7 +875,6 @@ body {
     <div class="screen" id="screen-progress">
 
       <div id="progress-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
-      <div class="section-header"><div class="section-title">Por disciplina</div></div>
       <div id="progress-list" style="display:flex;flex-direction:column;gap:9px;"></div>
     </div>
 
@@ -893,13 +892,10 @@ body {
 
     <!-- ══ GRADES ══ -->
     <div class="screen" id="screen-grades">
-      <div id="grades-empty" class="empty-state" style="display:none;">
+      <div id="grades-empty" class="empty-state clickable-empty" style="display:none;" onclick="openGradeModal()">
         <div class="empty-ic"><i class="fas fa-square-root-variable"></i></div>
-        <div class="empty-title">Nenhuma nota registrada</div>
+        <div class="empty-title">Clique aqui para registar</div>
         <div class="empty-desc">Comece a acompanhar seu desempenho lançando a primeira nota de uma disciplina.</div>
-        <button class="btn-save" style="margin-top:14px;position:static;align-self:center;width:auto;min-width:220px;" onclick="openGradeModal()">
-          <i class="fas fa-plus"></i> Adicionar primeira nota
-        </button>
       </div>
       <div id="grades-content" style="display:none;">
         
