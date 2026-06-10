@@ -1428,16 +1428,38 @@ function scheduleAll() {
 function scheduleKey(si, sessi) { return `${si}-${sessi}`; }
 
 function scheduleSession(subj, si, sess, sessi) {
-  const alertMs = nextOccurrenceOf(sess).getTime() - 60*60000 - Date.now();
-  const endMs   = nextEndOf(sess).getTime() - Date.now();
-  const a = alertMs>0 ? setTimeout(()=>inAppAlert(si, sessi), alertMs) : null;
-  const e = endMs>0   ? setTimeout(()=>onSessionEnd(si, sessi), endMs) : null;
-  scheduledIds[scheduleKey(si,sessi)] = {a, e};
+  // Alerta de 1h antes é disparado pelo tick (checkAlertsTick) para evitar
+  // imprecisões de setTimeout longos (throttling em background, drift).
+  const endMs = nextEndOf(sess).getTime() - Date.now();
+  const e = endMs>0 ? setTimeout(()=>onSessionEnd(si, sessi), endMs) : null;
+  scheduledIds[scheduleKey(si,sessi)] = {a: null, e};
 }
 
 function clearScheduleFor(si, sessi) {
   const key = scheduleKey(si, sessi);
-  if (scheduledIds[key]) { clearTimeout(scheduledIds[key].a); clearTimeout(scheduledIds[key].e); delete scheduledIds[key]; }
+  if (scheduledIds[key]) { if(scheduledIds[key].a) clearTimeout(scheduledIds[key].a); if(scheduledIds[key].e) clearTimeout(scheduledIds[key].e); delete scheduledIds[key]; }
+}
+
+// Dispara alertas exatamente quando faltar ~60min para uma aula.
+const alertedOccurrences = new Set();
+function checkAlertsTick() {
+  const nowMs = Date.now();
+  subjects.forEach((subj, si) => {
+    subj.sessions.forEach((sess, sessi) => {
+      const occMs = nextOccurrenceOf(sess).getTime();
+      const diff = occMs - nowMs; // ms até início
+      // Janela: entre 59min e 60min antes (tolerância p/ tick de 20s)
+      if (diff <= 60*60000 && diff > 59*60000) {
+        const key = `${si}-${sessi}-${occMs}`;
+        if (!alertedOccurrences.has(key)) {
+          alertedOccurrences.add(key);
+          inAppAlert(si, sessi);
+        }
+      }
+    });
+  });
+  // Limpa marcações antigas (>2h passadas)
+  if (alertedOccurrences.size > 200) alertedOccurrences.clear();
 }
 
 function inAppAlert(si, sessi) {
@@ -2250,6 +2272,8 @@ function renderTaskCard(t){
 loadData(); renderList(); scheduleAll(); checkNotifStatus(); tickClock();
 setInterval(tickClock,  30000);
 setInterval(renderList, 60000);
+setInterval(checkAlertsTick, 20000);
+checkAlertsTick();
 registerSW();
 // Re-schedule background notifications on key events
 window.addEventListener('focus', () => scheduleBackgroundNotifications());
