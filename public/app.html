@@ -2342,6 +2342,13 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
     setTimeout(showBanner, 1500);
   }
 })();
+
+/* ── Fechar modais ao clicar no overlay (fora do conteúdo) ── */
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', (e) => {
+    if (e.target === ov) ov.classList.remove('open');
+  });
+});
 </script>
 </body>
 </html>
