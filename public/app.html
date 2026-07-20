@@ -2356,5 +2356,95 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   });
 });
 </script>
+
+<!-- ══ AUTH (Lovable Cloud / Supabase) ══ -->
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  const SUPABASE_URL = 'https://xmixxdreaskznmwdjjyt.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaXh4ZHJlYXNrem5td2Rqanl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NzA3MTYsImV4cCI6MjEwMDE0NjcxNn0.KopMjniT8RxrmOs58mkCLFD-tTS7wi5BBXkVdunkAOY';
+
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, storage: window.localStorage },
+  });
+  window.__ssp_sb = sb;
+
+  function renderAuthUI(session) {
+    const label  = document.getElementById('nav-auth-label');
+    const icon   = document.getElementById('nav-auth-icon');
+    const name   = document.querySelector('.drawer-user-name');
+    const role   = document.querySelector('.drawer-user-role');
+    if (session?.user) {
+      const email = session.user.email || 'Conta';
+      const display = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email.split('@')[0];
+      if (name) name.textContent = display;
+      if (role) role.textContent = email;
+      if (label) label.textContent = 'Sair';
+      if (icon)  icon.className = 'fas fa-right-from-bracket d-icon';
+      window.__ssp_signed_in = true;
+    } else {
+      if (name) name.textContent = 'Convidado';
+      if (role) role.textContent = 'Toque em Entrar para sincronizar';
+      if (label) label.textContent = 'Entrar / Criar conta';
+      if (icon)  icon.className = 'fas fa-right-to-bracket d-icon';
+      window.__ssp_signed_in = false;
+    }
+  }
+
+  window.handleAuthClick = async () => {
+    if (window.__ssp_signed_in) {
+      await sb.auth.signOut();
+      if (typeof showToast === 'function') showToast('Sessão terminada.');
+    } else {
+      window.location.href = '/auth';
+    }
+  };
+
+  const { data } = await sb.auth.getSession();
+  renderAuthUI(data.session);
+  sb.auth.onAuthStateChange((_e, session) => renderAuthUI(session));
+</script>
+
+<!-- ══ SEED de exemplo (primeira visita) ══ -->
+<script>
+(function seedExamples(){
+  const FLAG = 'ssp_v4_seeded_examples';
+  if (localStorage.getItem(FLAG)) return;
+
+  // Notas de exemplo
+  try {
+    const g = JSON.parse(localStorage.getItem('ssp_v4_grades')) || {};
+    if (!Object.keys(g).length) {
+      const now = new Date().toISOString();
+      g['Matemática'] = [
+        { id: 'ex1', label: 'Teste 1',    value: 7.5, max: 10, weight: 0.3, date: now },
+        { id: 'ex2', label: 'Teste 2',    value: 8.0, max: 10, weight: 0.3, date: now },
+        { id: 'ex3', label: 'Trabalho',   value: 9.0, max: 10, weight: 0.4, date: now },
+      ];
+      g['Português'] = [
+        { id: 'ex4', label: 'Redação',    value: 6.5, max: 10, weight: 0.5, date: now },
+        { id: 'ex5', label: 'Prova oral', value: 7.0, max: 10, weight: 0.5, date: now },
+      ];
+      localStorage.setItem('ssp_v4_grades', JSON.stringify(g));
+    }
+  } catch {}
+
+  // Tarefas de exemplo
+  try {
+    const t = JSON.parse(localStorage.getItem('ssp_v4_tasks'));
+    if (!Array.isArray(t) || !t.length) {
+      const tomorrow = new Date(Date.now() + 24*3600e3).toISOString().slice(0,16);
+      const nextWeek = new Date(Date.now() + 7*24*3600e3).toISOString().slice(0,16);
+      localStorage.setItem('ssp_v4_tasks', JSON.stringify([
+        { id: 't1', title: 'Exercícios pág. 42', subject: 'Matemática', type: 'Tarefa',  due: tomorrow, done: false },
+        { id: 't2', title: 'Trabalho de grupo',   subject: 'História',   type: 'Trabalho', due: nextWeek, done: false },
+        { id: 't3', title: 'Estudar para o teste', subject: 'Português', type: 'Prova',    due: nextWeek, done: false },
+      ]));
+    }
+  } catch {}
+
+  localStorage.setItem(FLAG, '1');
+})();
+</script>
 </body>
 </html>
