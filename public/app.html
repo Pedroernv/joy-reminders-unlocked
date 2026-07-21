@@ -2163,10 +2163,32 @@ function openGradeModal(presetSubject){
   if (presetSubject) sel.value = presetSubject;
   document.getElementById('grade-label').value  = '';
   document.getElementById('grade-value').value  = '';
-  document.getElementById('grade-max').value    = '10';
+  const cfg = SSP_CONFIG.get();
+  document.getElementById('grade-max').value    = String(cfg.scale.max);
   document.getElementById('grade-weight').value = '1';
+  document.getElementById('grade-value').placeholder = `0–${cfg.scale.max}`;
+  renderGradeTemplates();
   document.getElementById('modal-grade').classList.add('open');
   setTimeout(()=>document.getElementById('grade-label').focus(), 80);
+}
+function renderGradeTemplates(){
+  const wrap = document.getElementById('grade-templates');
+  const cfg = SSP_CONFIG.get();
+  const list = (cfg.assessments||[]);
+  if (!list.length){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+  wrap.style.display='flex';
+  wrap.innerHTML = list.map((a,i)=>`
+    <button type="button" class="btn-snooze" data-tpl="${i}" style="padding:6px 10px;font-size:.72rem;">
+      <i class="fas fa-bolt"></i> ${escHtml(a.label)} · ${(a.weight*100).toFixed(0)}%
+    </button>`).join('');
+  wrap.querySelectorAll('[data-tpl]').forEach(btn=>{
+    btn.onclick = () => {
+      const t = list[+btn.getAttribute('data-tpl')];
+      document.getElementById('grade-label').value  = t.label;
+      document.getElementById('grade-weight').value = String(t.weight);
+      document.getElementById('grade-value').focus();
+    };
+  });
 }
 function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); }
 function submitGradeModal(){
