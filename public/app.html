@@ -1982,6 +1982,224 @@ function showRescheduleToast(msg) {
    INIT
 ══════════════════════════════════════════ */
 /* ══════════════════════════════════════════
+   ACADEMIC PRE-CONFIG (SSP_CONFIG)
+   Sistema de avaliação escolhido pelo estudante.
+   Persistido em localStorage e sincronizado na nuvem.
+══════════════════════════════════════════ */
+const SSP_CONFIG = (function(){
+  const KEY = 'ssp_v4_config';
+  const PRESETS = {
+    ispt: {
+      id:'ispt', label:'ISPT (Moçambique)', short:'ISPT',
+      desc:'Percentual 0–100 · aprovação ≥ 70 · 2 testes (30%) + trabalho (40%).',
+      scale:{ type:'percent', min:0, max:100 },
+      pass:70, recovery:50,
+      assessments:[
+        {label:'Teste 1',  weight:0.3},
+        {label:'Teste 2',  weight:0.3},
+        {label:'Trabalho', weight:0.4},
+      ],
+    },
+    pt: {
+      id:'pt', label:'Portugal (0–20)', short:'PT',
+      desc:'Escala 0–20 · aprovação ≥ 10 · 2 testes (40%) + trabalho (20%).',
+      scale:{ type:'0-20', min:0, max:20 },
+      pass:10, recovery:8,
+      assessments:[
+        {label:'Teste 1',  weight:0.4},
+        {label:'Teste 2',  weight:0.4},
+        {label:'Trabalho', weight:0.2},
+      ],
+    },
+    br: {
+      id:'br', label:'Brasil (0–10)', short:'BR',
+      desc:'Escala 0–10 · aprovação ≥ 7 · 2 provas (40%) + trabalho (20%).',
+      scale:{ type:'0-10', min:0, max:10 },
+      pass:7, recovery:5,
+      assessments:[
+        {label:'Prova 1',  weight:0.4},
+        {label:'Prova 2',  weight:0.4},
+        {label:'Trabalho', weight:0.2},
+      ],
+    },
+    us: {
+      id:'us', label:'EUA (0–100 / A–F)', short:'US',
+      desc:'Percentual 0–100 · aprovação ≥ 60 · Midterm + Final + Homework.',
+      scale:{ type:'percent', min:0, max:100 },
+      pass:60, recovery:50,
+      assessments:[
+        {label:'Midterm',  weight:0.4},
+        {label:'Final',    weight:0.4},
+        {label:'Homework', weight:0.2},
+      ],
+    },
+    custom: {
+      id:'custom', label:'Personalizado', short:'Custom',
+      desc:'Defina sua própria escala, limites e avaliações.',
+      scale:{ type:'custom', min:0, max:10 },
+      pass:7, recovery:5,
+      assessments:[{label:'Avaliação 1', weight:1}],
+    },
+  };
+  const DEFAULT = PRESETS.ispt;
+  let _cached = null;
+  function normalize(c){
+    if (!c || typeof c!=='object') return { ...DEFAULT, profile:'ispt', assessments: DEFAULT.assessments.map(a=>({...a})) };
+    const scale = c.scale || DEFAULT.scale;
+    return {
+      profile: c.profile || 'custom',
+      scale: { type: scale.type||'custom', min: +scale.min||0, max: +scale.max||10 },
+      pass:      c.pass      != null ? +c.pass      : DEFAULT.pass,
+      recovery:  c.recovery  != null ? +c.recovery  : DEFAULT.recovery,
+      assessments: Array.isArray(c.assessments) && c.assessments.length
+        ? c.assessments.map(a=>({ label:String(a.label||'Avaliação'), weight:+a.weight||0 }))
+        : DEFAULT.assessments.map(a=>({...a})),
+      version: 1,
+    };
+  }
+  function get(){
+    if (_cached) return _cached;
+    try { _cached = normalize(JSON.parse(localStorage.getItem(KEY))); }
+    catch { _cached = normalize(null); }
+    return _cached;
+  }
+  function set(c){
+    _cached = normalize(c);
+    localStorage.setItem(KEY, JSON.stringify(_cached));
+    return _cached;
+  }
+  function isConfigured(){ return !!localStorage.getItem(KEY); }
+  function preset(id){ return PRESETS[id] || null; }
+  function presets(){ return Object.values(PRESETS); }
+  return { get, set, isConfigured, preset, presets, KEY };
+})();
+
+/* ── Config modal ── */
+let _configAssessments = [];
+function openConfigModal(){
+  const c = SSP_CONFIG.get();
+  _configAssessments = c.assessments.map(a=>({...a}));
+  document.getElementById('config-scale-type').value = c.scale.type;
+  document.getElementById('config-scale-min').value  = c.scale.min;
+  document.getElementById('config-scale-max').value  = c.scale.max;
+  document.getElementById('config-pass').value       = c.pass;
+  document.getElementById('config-rec').value        = c.recovery;
+  renderConfigPresets(c.profile);
+  renderConfigAssessments();
+  document.getElementById('config-scale-type').onchange = onConfigScaleTypeChange;
+  document.getElementById('modal-config').classList.add('open');
+}
+function closeConfigModal(){ document.getElementById('modal-config').classList.remove('open'); }
+function renderConfigPresets(activeId){
+  const wrap = document.getElementById('config-presets');
+  wrap.innerHTML = SSP_CONFIG.presets().map(p => `
+    <button type="button" class="${p.id===activeId?'btn-ok':'btn-snooze'}" data-pid="${p.id}"
+      style="padding:6px 10px;font-size:.72rem;">${escHtml(p.short)}</button>
+  `).join('');
+  wrap.querySelectorAll('[data-pid]').forEach(b=>{
+    b.onclick = () => applyPresetIntoConfigModal(b.getAttribute('data-pid'));
+  });
+}
+function applyPresetIntoConfigModal(pid){
+  const p = SSP_CONFIG.preset(pid); if (!p) return;
+  _configAssessments = p.assessments.map(a=>({...a}));
+  document.getElementById('config-scale-type').value = p.scale.type;
+  document.getElementById('config-scale-min').value  = p.scale.min;
+  document.getElementById('config-scale-max').value  = p.scale.max;
+  document.getElementById('config-pass').value       = p.pass;
+  document.getElementById('config-rec').value        = p.recovery;
+  renderConfigPresets(pid);
+  renderConfigAssessments();
+}
+function onConfigScaleTypeChange(){
+  const t = document.getElementById('config-scale-type').value;
+  const map = { percent:100, '0-20':20, '0-10':10 };
+  if (map[t] != null) {
+    document.getElementById('config-scale-min').value = 0;
+    document.getElementById('config-scale-max').value = map[t];
+  }
+  renderConfigPresets(null);
+}
+function renderConfigAssessments(){
+  const list = document.getElementById('config-assess-list');
+  list.innerHTML = _configAssessments.map((a,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 90px 40px;gap:6px;align-items:center;">
+      <input class="form-input" data-idx="${i}" data-f="label"  value="${escAttr(a.label)}" placeholder="Nome" />
+      <input class="form-input" data-idx="${i}" data-f="weight" type="number" step="0.05" min="0" max="1" value="${a.weight}" />
+      <button class="btn-snooze" data-del="${i}" style="padding:6px;"><i class="fas fa-xmark"></i></button>
+    </div>
+  `).join('');
+  list.querySelectorAll('input').forEach(inp=>{
+    inp.oninput = () => {
+      const i = +inp.getAttribute('data-idx'), f = inp.getAttribute('data-f');
+      _configAssessments[i][f] = f==='weight' ? (parseFloat(inp.value)||0) : inp.value;
+      updateWeightHint();
+    };
+  });
+  list.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = () => { _configAssessments.splice(+b.getAttribute('data-del'),1); renderConfigAssessments(); };
+  });
+  updateWeightHint();
+}
+function configAddAssessment(){
+  _configAssessments.push({ label:`Avaliação ${_configAssessments.length+1}`, weight:0 });
+  renderConfigAssessments();
+}
+function updateWeightHint(){
+  const s = _configAssessments.reduce((a,b)=>a+(+b.weight||0),0);
+  const el = document.getElementById('config-weight-hint');
+  const ok = Math.abs(s-1) < 0.01;
+  el.innerHTML = `Soma dos pesos: <b style="color:${ok?'var(--green,#2ea056)':'#c83737'};">${s.toFixed(2)}</b>${ok?' ✓':' (ajuste para 1.00)'}`;
+}
+function submitConfigModal(){
+  const type = document.getElementById('config-scale-type').value;
+  const min  = parseFloat(document.getElementById('config-scale-min').value)||0;
+  const max  = parseFloat(document.getElementById('config-scale-max').value)||10;
+  const pass = parseFloat(document.getElementById('config-pass').value);
+  const rec  = parseFloat(document.getElementById('config-rec').value);
+  if (max <= min){ showToast('Máx deve ser maior que Mín'); return; }
+  if (isNaN(pass) || pass<min || pass>max){ showToast(`Aprovação deve estar entre ${min} e ${max}`); return; }
+  if (isNaN(rec)  || rec<min  || rec>pass){ showToast('Recuperação deve ser ≤ aprovação'); return; }
+  const activeBtn = document.querySelector('#config-presets .btn-ok[data-pid]');
+  const profile = activeBtn ? activeBtn.getAttribute('data-pid') : 'custom';
+  SSP_CONFIG.set({ profile, scale:{type,min,max}, pass, recovery:rec, assessments:_configAssessments });
+  closeConfigModal();
+  if (typeof renderGrades === 'function') renderGrades();
+  if (typeof renderProgress === 'function') renderProgress();
+  showToast('Preconfiguração salva!');
+}
+
+/* ── Onboarding (primeira visita) ── */
+function maybeShowOnboarding(){
+  if (SSP_CONFIG.isConfigured()) return;
+  const wrap = document.getElementById('onb-presets');
+  wrap.innerHTML = SSP_CONFIG.presets().map(p => `
+    <button type="button" class="btn-snooze" data-onb="${p.id}"
+      style="text-align:left;padding:10px 12px;display:flex;flex-direction:column;gap:2px;align-items:flex-start;">
+      <div style="font-weight:800;font-size:.86rem;color:var(--text-dark);"><i class="fas fa-building-columns"></i> ${escHtml(p.label)}</div>
+      <div style="font-size:.72rem;color:var(--text-muted);font-weight:600;">${escHtml(p.desc)}</div>
+    </button>
+  `).join('');
+  wrap.querySelectorAll('[data-onb]').forEach(b=>{
+    b.onclick = () => {
+      const p = SSP_CONFIG.preset(b.getAttribute('data-onb'));
+      SSP_CONFIG.set({ profile:p.id, scale:p.scale, pass:p.pass, recovery:p.recovery, assessments:p.assessments });
+      document.getElementById('modal-onboarding').classList.remove('open');
+      if (typeof renderGrades === 'function') renderGrades();
+      if (typeof renderProgress === 'function') renderProgress();
+      showToast(`Perfil "${p.short}" ativado.`);
+    };
+  });
+  document.getElementById('modal-onboarding').classList.add('open');
+}
+function onboardingSkip(){
+  SSP_CONFIG.set(SSP_CONFIG.get()); // grava default sem forçar preset
+  document.getElementById('modal-onboarding').classList.remove('open');
+}
+/* Dispara onboarding após load */
+window.addEventListener('load', () => { setTimeout(maybeShowOnboarding, 400); });
+
+/* ══════════════════════════════════════════
    GRADES (Notas & Médias)
 ══════════════════════════════════════════ */
 const GRADES_KEY     = 'ssp_v4_grades';      // { [subjectName]: [{id,label,value,max,weight,date}] }
