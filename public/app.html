@@ -1986,8 +1986,12 @@ function showRescheduleToast(msg) {
 ══════════════════════════════════════════ */
 const GRADES_KEY     = 'ssp_v4_grades';      // { [subjectName]: [{id,label,value,max,weight,date}] }
 const GRADES_OPEN_KEY = 'ssp_v4_grades_open'; // { [subjectName]: true }
-const PASS_THRESHOLD = 7;   // sobre 10
-const REC_THRESHOLD  = 5;
+/* Thresholds em escala normalizada 0..10, derivados da configuração acadêmica */
+function PASS_THRESHOLD(){ const c=SSP_CONFIG.get(); return (c.pass / c.scale.max) * 10; }
+function REC_THRESHOLD (){ const c=SSP_CONFIG.get(); return (c.recovery / c.scale.max) * 10; }
+/* Converte média 0..10 para a escala configurada */
+function toScale(v){ if(v==null) return null; const c=SSP_CONFIG.get(); return v * c.scale.max / 10; }
+function fmtScale(v){ if(v==null) return '—'; const c=SSP_CONFIG.get(); const d = c.scale.max >= 100 ? 0 : 1; return toScale(v).toFixed(d).replace('.',','); }
 
 function loadGrades(){
   try { return JSON.parse(localStorage.getItem(GRADES_KEY)) || {}; } catch { return {}; }
