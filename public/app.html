@@ -2405,6 +2405,114 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   sb.auth.onAuthStateChange((_e, session) => renderAuthUI(session));
 </script>
 
+<!-- ══ SYNC automático (localStorage ↔ Cloud) ══ -->
+<script type="module">
+  const SYNC_KEYS = ['ssp_v4_subjects','ssp_v4_attendance','ssp_v4_grades','ssp_v4_grades_open','ssp_v4_tasks'];
+  const HYDRATED_FLAG = 'ssp_v4_cloud_hydrated';
+
+  function waitForSb(){
+    return new Promise(res => {
+      const t = setInterval(() => { if (window.__ssp_sb) { clearInterval(t); res(window.__ssp_sb); } }, 50);
+    });
+  }
+
+  const sb = await waitForSb();
+
+  async function pullFromCloud(userId){
+    const { data, error } = await sb.from('user_sync').select('key,value').eq('user_id', userId);
+    if (error) { console.warn('[sync] pull error', error); return null; }
+    return data || [];
+  }
+
+  async function pushKey(userId, key, value){
+    try {
+      await sb.from('user_sync').upsert(
+        { user_id: userId, key, value, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,key' }
+      );
+    } catch (e) { console.warn('[sync] push error', key, e); }
+  }
+
+  async function pushAll(userId){
+    for (const k of SYNC_KEYS){
+      const raw = localStorage.getItem(k);
+      if (raw == null) continue;
+      try { await pushKey(userId, k, JSON.parse(raw)); } catch {}
+    }
+  }
+
+  // Intercepta writes locais para propagar quando logado
+  const _origSet = localStorage.setItem.bind(localStorage);
+  const _origRemove = localStorage.removeItem.bind(localStorage);
+  const pending = new Map();
+  let flushTimer = null;
+  function schedulePush(userId, key, value){
+    pending.set(key, value);
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(async () => {
+      for (const [k, v] of pending.entries()) await pushKey(userId, k, v);
+      pending.clear();
+    }, 600);
+  }
+  localStorage.setItem = function(k, v){
+    _origSet(k, v);
+    if (SYNC_KEYS.includes(k) && window.__ssp_user_id){
+      try { schedulePush(window.__ssp_user_id, k, JSON.parse(v)); } catch {}
+    }
+  };
+  localStorage.removeItem = function(k){
+    _origRemove(k);
+    if (SYNC_KEYS.includes(k) && window.__ssp_user_id){
+      schedulePush(window.__ssp_user_id, k, null);
+    }
+  };
+
+  async function hydrateOnLogin(session){
+    const user = session?.user; if (!user) return;
+    window.__ssp_user_id = user.id;
+    const alreadyHydrated = localStorage.getItem(HYDRATED_FLAG) === user.id;
+    const rows = await pullFromCloud(user.id);
+    if (rows == null) return;
+
+    if (rows.length === 0){
+      // Primeira vez desta conta — envia o que houver localmente
+      await pushAll(user.id);
+      _origSet(HYDRATED_FLAG, user.id);
+      if (typeof showToast === 'function') showToast('Dados enviados para a nuvem.');
+      return;
+    }
+
+    // Nuvem tem dados — aplica localmente
+    let changed = false;
+    for (const row of rows){
+      if (!SYNC_KEYS.includes(row.key)) continue;
+      const current = localStorage.getItem(row.key);
+      const next = row.value == null ? null : JSON.stringify(row.value);
+      if (current !== next){
+        if (next == null) _origRemove(row.key); else _origSet(row.key, next);
+        changed = true;
+      }
+    }
+    _origSet(HYDRATED_FLAG, user.id);
+    if (changed && !alreadyHydrated){
+      if (typeof showToast === 'function') showToast('Dados sincronizados. A recarregar…');
+      setTimeout(() => location.reload(), 700);
+    }
+  }
+
+  // Estado inicial
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) hydrateOnLogin(session);
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') hydrateOnLogin(session);
+    if (event === 'SIGNED_OUT'){
+      window.__ssp_user_id = null;
+      _origRemove(HYDRATED_FLAG);
+    }
+  });
+</script>
+
 <!-- ══ SEED de exemplo (primeira visita) ══ -->
 <script>
 (function seedExamples(){
