@@ -1,5 +1,5 @@
 // SmartSchoolPro Service Worker — offline cache + background notifications
-const CACHE = 'ssp-v4';
+const CACHE = 'ssp-v5';
 const ASSETS = [
   '/app.html',
   '/manifest.json',
