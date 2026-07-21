@@ -2024,17 +2024,17 @@ function computeStats(items){
 }
 function avgClass(avg){
   if (avg == null) return 'avg-none';
-  if (avg >= PASS_THRESHOLD) return 'avg-ok';
-  if (avg >= REC_THRESHOLD)  return 'avg-rec';
+  if (avg >= PASS_THRESHOLD()) return 'avg-ok';
+  if (avg >= REC_THRESHOLD())  return 'avg-rec';
   return 'avg-bad';
 }
 function avgLabel(avg){
   if (avg == null) return 'Sem notas';
-  if (avg >= PASS_THRESHOLD) return 'Aprovado';
-  if (avg >= REC_THRESHOLD)  return 'Recuperação';
+  if (avg >= PASS_THRESHOLD()) return 'Aprovado';
+  if (avg >= REC_THRESHOLD())  return 'Recuperação';
   return 'Reprovado';
 }
-function fmtAvg(v){ return v==null ? '—' : v.toFixed(1).replace('.',','); }
+function fmtAvg(v){ return fmtScale(v); }
 
 function renderGrades(){
   const emptyEl   = document.getElementById('grades-empty');
@@ -2057,13 +2057,13 @@ function renderGrades(){
   const globalAvg = withGrades.length
     ? withGrades.reduce((a,b)=>a+b.stats.weighted,0) / withGrades.length
     : null;
-  const approved = withGrades.filter(p => p.stats.weighted >= PASS_THRESHOLD).length;
+  const approved = withGrades.filter(p => p.stats.weighted >= PASS_THRESHOLD()).length;
   const best  = withGrades.slice().sort((a,b)=>b.stats.weighted-a.stats.weighted)[0];
   const worst = withGrades.slice().sort((a,b)=>a.stats.weighted-b.stats.weighted)[0];
 
   summary.innerHTML = `
     <div class="prog-stat"><div class="v">${fmtAvg(globalAvg)}</div><div class="l">Média geral</div></div>
-    <div class="prog-stat"><div class="v">${approved}/${withGrades.length}</div><div class="l">Aprovado (≥${PASS_THRESHOLD})</div></div>
+    <div class="prog-stat"><div class="v">${approved}/${withGrades.length}</div><div class="l">Aprovado (≥${fmtScale(PASS_THRESHOLD())})</div></div>
     <div class="prog-stat"><div class="v">${best ? best.name.split(' ')[0] : '—'}</div><div class="l">Melhor: ${best?fmtAvg(best.stats.weighted):'—'}</div></div>
     <div class="prog-stat"><div class="v">${worst && worst!==best ? worst.name.split(' ')[0] : '—'}</div><div class="l">Atenção: ${worst&&worst!==best?fmtAvg(worst.stats.weighted):'—'}</div></div>
   `;
@@ -2078,8 +2078,8 @@ function renderGrades(){
     card.className = 'gr-card' + (open[subj.name] ? ' open' : '');
     const pct = stats.weighted != null ? Math.max(0,Math.min(100,(stats.weighted/10)*100)) : 0;
     const barColor = stats.weighted == null ? 'rgba(0,0,0,.15)'
-      : stats.weighted >= PASS_THRESHOLD ? '#2ea056'
-      : stats.weighted >= REC_THRESHOLD ? '#d99825' : '#c83737';
+      : stats.weighted >= PASS_THRESHOLD() ? '#2ea056'
+      : stats.weighted >= REC_THRESHOLD() ? '#d99825' : '#c83737';
     card.innerHTML = `
       <div class="gr-head" data-name="${escAttr(subj.name)}">
         <div class="ic"><i class="fas fa-book"></i></div>
