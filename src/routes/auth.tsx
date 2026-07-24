@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import iconAsset from "@/assets/icon.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -87,12 +88,11 @@ function AuthPage() {
         boxShadow: "0 8px 32px rgba(0,0,0,.12)",
       }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{
-            width: 56, height: 56, margin: "0 auto 12px",
-            borderRadius: 14, background: "#2d3a4a",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 26, fontWeight: 800,
-          }}>S</div>
+          <img
+            src={iconAsset.url}
+            alt="SmartSchoolPro"
+            style={{ width: 72, height: 72, margin: "0 auto 12px", display: "block", objectFit: "contain" }}
+          />
           <h1 style={{ margin: 0, fontSize: 22, color: "#1a2535" }}>SmartSchoolPro</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7f8f" }}>
             {mode === "signin" ? "Entre na sua conta" : "Crie a sua conta"}
