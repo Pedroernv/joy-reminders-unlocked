@@ -10,9 +10,9 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/__l5e/assets-v1/c6335da9-7603-4d82-803e-042ed00cd5e4/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
