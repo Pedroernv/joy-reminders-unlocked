@@ -1,9 +1,9 @@
 // SmartSchoolPro Service Worker — offline cache + background notifications
-const CACHE = 'ssp-v5';
+const CACHE = 'ssp-v6';
 const ASSETS = [
   '/app.html',
   '/manifest.json',
-  '/icon.svg',
+  '/__l5e/assets-v1/c6335da9-7603-4d82-803e-042ed00cd5e4/icon.png',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
 ];
