@@ -2687,6 +2687,10 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 document.querySelectorAll('.modal-overlay').forEach(ov => {
   ov.addEventListener('click', (e) => {
     if (e.target === ov) ov.classList.remove('open');
+    if (e.target === ov) {
+      if (ov.id === 'modal-grade') resetGradeFields();
+      if (ov.id === 'modal-task') { editingTaskId = null; resetTaskFields(); }
+    }
   });
 });
 </script>
