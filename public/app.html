@@ -1710,7 +1710,10 @@ function saveSubject() {
     subjects[si].sessions.forEach((sess,sessi) => scheduleSession(subjects[si], si, sess, sessi));
     showToast(`"${name}" adicionada!`);
   }
-  saveData(); renderList(); showScreen('home');
+  saveData(); renderList();
+  document.getElementById('input-name').value = '';
+  formSessions = [{ day:'Segunda-Feira', hour:'08:00', duration:60 }];
+  showScreen('home');
 }
 // schedule BG after save handled via visibilitychange/focus
 
@@ -2408,7 +2411,14 @@ function renderGradeTemplates(){
     };
   });
 }
-function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); }
+function resetGradeFields(){
+  const cfg = SSP_CONFIG.get();
+  document.getElementById('grade-label').value  = '';
+  document.getElementById('grade-value').value  = '';
+  document.getElementById('grade-max').value    = String(cfg.scale.max);
+  document.getElementById('grade-weight').value = '1';
+}
+function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); resetGradeFields(); }
 function submitGradeModal(){
   const name   = document.getElementById('grade-subj').value;
   const label  = document.getElementById('grade-label').value.trim() || 'Avaliação';
