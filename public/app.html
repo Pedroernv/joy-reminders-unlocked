@@ -533,6 +533,10 @@ body {
 .modal-box { background:var(--item-bg); border-radius:var(--radius-lg); width:100%; max-width:320px; overflow:hidden; box-shadow:0 10px 44px rgba(0,0,0,.28); animation:slideUp .22s ease; }
 .modal-header { background:var(--header-bg); color:white; font-size:.98rem; font-weight:800; padding:14px 18px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; }
 .modal-body   { padding:22px 20px 14px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+.modal-header { position:relative; }
+.modal-close { position:absolute; top:50%; right:10px; transform:translateY(-50%); width:30px; height:30px; border:none; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; font-size:.9rem; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.modal-close:active { background:rgba(255,255,255,.32); }
+.confirm-close { position:absolute; top:10px; right:10px; width:30px; height:30px; border:none; border-radius:50%; background:var(--item-border); color:var(--text-dark); font-size:.9rem; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 .bell-fa      { font-size:3rem; color:var(--header-bg); animation:ring .9s ease-in-out infinite; display:inline-block; }
 @keyframes ring { 0%,100%{transform:rotate(-12deg)} 25%{transform:rotate(12deg)} 50%{transform:rotate(-12deg)} 75%{transform:rotate(12deg)} }
 .modal-subject { font-size:1.05rem; font-weight:900; color:var(--text-dark); }
