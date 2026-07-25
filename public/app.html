@@ -1710,7 +1710,10 @@ function saveSubject() {
     subjects[si].sessions.forEach((sess,sessi) => scheduleSession(subjects[si], si, sess, sessi));
     showToast(`"${name}" adicionada!`);
   }
-  saveData(); renderList(); showScreen('home');
+  saveData(); renderList();
+  document.getElementById('input-name').value = '';
+  formSessions = [{ day:'Segunda-Feira', hour:'08:00', duration:60 }];
+  showScreen('home');
 }
 // schedule BG after save handled via visibilitychange/focus
 
@@ -2408,7 +2411,14 @@ function renderGradeTemplates(){
     };
   });
 }
-function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); }
+function resetGradeFields(){
+  const cfg = SSP_CONFIG.get();
+  document.getElementById('grade-label').value  = '';
+  document.getElementById('grade-value').value  = '';
+  document.getElementById('grade-max').value    = String(cfg.scale.max);
+  document.getElementById('grade-weight').value = '1';
+}
+function closeGradeModal(){ document.getElementById('modal-grade').classList.remove('open'); resetGradeFields(); }
 function submitGradeModal(){
   const name   = document.getElementById('grade-subj').value;
   const label  = document.getElementById('grade-label').value.trim() || 'Avaliação';
@@ -2479,7 +2489,14 @@ function openTaskModal(taskId){
   document.getElementById('modal-task').classList.add('open');
   setTimeout(()=>document.getElementById('task-title').focus(), 80);
 }
-function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; }
+function resetTaskFields(){
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-type').value  = 'Tarefa';
+  document.getElementById('task-due').value   = '';
+  document.getElementById('task-subj').value  = '';
+  document.getElementById('task-notes').value = '';
+}
+function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; resetTaskFields(); }
 function submitTaskModal(){
   const title = document.getElementById('task-title').value.trim();
   if (!title) { showToast('Informe o título'); return; }
@@ -2670,6 +2687,10 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 document.querySelectorAll('.modal-overlay').forEach(ov => {
   ov.addEventListener('click', (e) => {
     if (e.target === ov) ov.classList.remove('open');
+    if (e.target === ov) {
+      if (ov.id === 'modal-grade') resetGradeFields();
+      if (ov.id === 'modal-task') { editingTaskId = null; resetTaskFields(); }
+    }
   });
 });
 </script>
