@@ -533,6 +533,10 @@ body {
 .modal-box { background:var(--item-bg); border-radius:var(--radius-lg); width:100%; max-width:320px; overflow:hidden; box-shadow:0 10px 44px rgba(0,0,0,.28); animation:slideUp .22s ease; }
 .modal-header { background:var(--header-bg); color:white; font-size:.98rem; font-weight:800; padding:14px 18px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; }
 .modal-body   { padding:22px 20px 14px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+.modal-header { position:relative; }
+.modal-close { position:absolute; top:50%; right:10px; transform:translateY(-50%); width:30px; height:30px; border:none; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; font-size:.9rem; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.modal-close:active { background:rgba(255,255,255,.32); }
+.confirm-close { position:absolute; top:10px; right:10px; width:30px; height:30px; border:none; border-radius:50%; background:var(--item-border); color:var(--text-dark); font-size:.9rem; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 .bell-fa      { font-size:3rem; color:var(--header-bg); animation:ring .9s ease-in-out infinite; display:inline-block; }
 @keyframes ring { 0%,100%{transform:rotate(-12deg)} 25%{transform:rotate(12deg)} 50%{transform:rotate(-12deg)} 75%{transform:rotate(12deg)} }
 .modal-subject { font-size:1.05rem; font-weight:900; color:var(--text-dark); }
@@ -940,7 +944,7 @@ body {
 <!-- ALERT MODAL -->
 <div class="modal-overlay" id="modal-alert">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-triangle-exclamation"></i> Alerta de Aula!</div>
+    <div class="modal-header"><i class="fas fa-triangle-exclamation"></i> Alerta de Aula!<button class="modal-close" onclick="closeAlert()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div class="modal-body">
       <i class="fas fa-bell bell-fa"></i>
       <div class="modal-subject" id="alert-subject"></div>
@@ -958,6 +962,7 @@ body {
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal-box">
     <div class="confirm-body">
+      <button class="confirm-close" onclick="closeConfirm()" aria-label="Fechar"><i class="fas fa-xmark"></i></button>
       <div class="confirm-fa" id="confirm-icon-fa"><i class="fas fa-trash-can" style="color:var(--red);"></i></div>
       <div class="confirm-title" id="confirm-title">Confirmar</div>
       <div class="confirm-desc"  id="confirm-desc">Tem certeza?</div>
@@ -972,7 +977,7 @@ body {
 <!-- SOUND MODAL -->
 <div class="modal-overlay" id="modal-sound">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-music"></i> Escolher Som</div>
+    <div class="modal-header"><i class="fas fa-music"></i> Escolher Som<button class="modal-close" onclick="closeSoundPicker()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div class="sound-list" id="sound-list"></div>
     <label class="sound-upload-btn">
       <i class="fas fa-folder-open"></i> Usar meu próprio áudio (MP3/OGG)
@@ -984,7 +989,7 @@ body {
 <!-- GRADE MODAL -->
 <div class="modal-overlay" id="modal-grade">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota</div>
+    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota<button class="modal-close" onclick="closeGradeModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <label class="form-label"><i class="fas fa-book"></i> Disciplina</label>
       <select class="form-select" id="grade-subj"></select>
@@ -1016,7 +1021,7 @@ body {
 <!-- CONFIG (Preconfiguração Acadêmica) MODAL -->
 <div class="modal-overlay" id="modal-config">
   <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
-    <div class="modal-header"><i class="fas fa-sliders"></i> <span id="config-title">Preconfiguração Acadêmica</span></div>
+    <div class="modal-header"><i class="fas fa-sliders"></i> <span id="config-title">Preconfiguração Acadêmica</span><button class="modal-close" onclick="closeConfigModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:12px;">
       <div style="font-size:.78rem;color:var(--text-muted);font-weight:600;line-height:1.4;" id="config-intro">
         Escolha o sistema de avaliação da sua instituição. Isso ajusta a escala de notas, os limites de aprovação e os tipos de avaliação usados nas suas notas.
@@ -1071,7 +1076,7 @@ body {
 <!-- ONBOARDING MODAL (primeira visita) -->
 <div class="modal-overlay" id="modal-onboarding">
   <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
-    <div class="modal-header"><i class="fas fa-hand-sparkles"></i> Bem-vindo ao SmartSchoolPro</div>
+    <div class="modal-header"><i class="fas fa-hand-sparkles"></i> Bem-vindo ao SmartSchoolPro<button class="modal-close" onclick="onboardingSkip()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <div style="font-size:.82rem;color:var(--text-dark);font-weight:600;line-height:1.45;">
         Cada escola avalia de um jeito. Escolha o sistema que a sua instituição usa — você pode ajustar tudo depois.
@@ -1085,7 +1090,7 @@ body {
 <!-- TASK MODAL -->
 <div class="modal-overlay" id="modal-task">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span></div>
+    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span><button class="modal-close" onclick="closeTaskModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <label class="form-label"><i class="fas fa-pen"></i> Título</label>
       <input class="form-input" id="task-title" maxlength="80" placeholder="Ex: Lista de exercícios cap. 3" />
@@ -1659,6 +1664,8 @@ function removeSessionRow(idx) {
    SCREENS & CRUD
 ══════════════════════════════════════════ */
 function showScreen(id) {
+  const leavingForm = document.getElementById('screen-form')?.classList.contains('active');
+  if (leavingForm && id !== 'form') resetSubjectForm();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
@@ -1670,6 +1677,13 @@ function showScreen(id) {
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
   if(id==='tasks')    renderTasks();
+}
+
+function resetSubjectForm() {
+  editingIndex = -1;
+  const el = document.getElementById('input-name');
+  if (el) el.value = '';
+  formSessions = [{ day:'Segunda-Feira', hour:'08:00', duration:60 }];
 }
 
 function startAdd() {
@@ -1749,7 +1763,9 @@ function askClearData() {
   document.getElementById('confirm-btn').style.background='var(--red)';
   confirmCb=()=>{
     Object.values(scheduledIds).forEach(v=>{clearTimeout(v.a);clearTimeout(v.e);}); scheduledIds={};
-    subjects=[]; openCards={}; saveData(); renderList(); closeConfirm(); showToast('Dados apagados!');
+    subjects=[]; openCards={}; saveData(); renderList();
+    resetSubjectForm();
+    closeConfirm(); closeDrawer(); closeConfigModal?.(); showToast('Dados apagados!');
   };
   document.getElementById('modal-confirm').classList.add('open');
 }
