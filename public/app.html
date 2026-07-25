@@ -1664,6 +1664,8 @@ function removeSessionRow(idx) {
    SCREENS & CRUD
 ══════════════════════════════════════════ */
 function showScreen(id) {
+  const leavingForm = document.getElementById('screen-form')?.classList.contains('active');
+  if (leavingForm && id !== 'form') resetSubjectForm();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
@@ -1675,6 +1677,13 @@ function showScreen(id) {
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
   if(id==='tasks')    renderTasks();
+}
+
+function resetSubjectForm() {
+  editingIndex = -1;
+  const el = document.getElementById('input-name');
+  if (el) el.value = '';
+  formSessions = [{ day:'Segunda-Feira', hour:'08:00', duration:60 }];
 }
 
 function startAdd() {
@@ -1754,7 +1763,9 @@ function askClearData() {
   document.getElementById('confirm-btn').style.background='var(--red)';
   confirmCb=()=>{
     Object.values(scheduledIds).forEach(v=>{clearTimeout(v.a);clearTimeout(v.e);}); scheduledIds={};
-    subjects=[]; openCards={}; saveData(); renderList(); closeConfirm(); showToast('Dados apagados!');
+    subjects=[]; openCards={}; saveData(); renderList();
+    resetSubjectForm();
+    closeConfirm(); closeDrawer(); closeConfigModal?.(); showToast('Dados apagados!');
   };
   document.getElementById('modal-confirm').classList.add('open');
 }
