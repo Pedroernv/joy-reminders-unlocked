@@ -2489,7 +2489,14 @@ function openTaskModal(taskId){
   document.getElementById('modal-task').classList.add('open');
   setTimeout(()=>document.getElementById('task-title').focus(), 80);
 }
-function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; }
+function resetTaskFields(){
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-type').value  = 'Tarefa';
+  document.getElementById('task-due').value   = '';
+  document.getElementById('task-subj').value  = '';
+  document.getElementById('task-notes').value = '';
+}
+function closeTaskModal(){ document.getElementById('modal-task').classList.remove('open'); editingTaskId = null; resetTaskFields(); }
 function submitTaskModal(){
   const title = document.getElementById('task-title').value.trim();
   if (!title) { showToast('Informe o título'); return; }
