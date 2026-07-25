@@ -944,7 +944,7 @@ body {
 <!-- ALERT MODAL -->
 <div class="modal-overlay" id="modal-alert">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-triangle-exclamation"></i> Alerta de Aula!</div>
+    <div class="modal-header"><i class="fas fa-triangle-exclamation"></i> Alerta de Aula!<button class="modal-close" onclick="closeAlert()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div class="modal-body">
       <i class="fas fa-bell bell-fa"></i>
       <div class="modal-subject" id="alert-subject"></div>
@@ -962,6 +962,7 @@ body {
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal-box">
     <div class="confirm-body">
+      <button class="confirm-close" onclick="closeConfirm()" aria-label="Fechar"><i class="fas fa-xmark"></i></button>
       <div class="confirm-fa" id="confirm-icon-fa"><i class="fas fa-trash-can" style="color:var(--red);"></i></div>
       <div class="confirm-title" id="confirm-title">Confirmar</div>
       <div class="confirm-desc"  id="confirm-desc">Tem certeza?</div>
@@ -976,7 +977,7 @@ body {
 <!-- SOUND MODAL -->
 <div class="modal-overlay" id="modal-sound">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-music"></i> Escolher Som</div>
+    <div class="modal-header"><i class="fas fa-music"></i> Escolher Som<button class="modal-close" onclick="closeSoundPicker()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div class="sound-list" id="sound-list"></div>
     <label class="sound-upload-btn">
       <i class="fas fa-folder-open"></i> Usar meu próprio áudio (MP3/OGG)
@@ -988,7 +989,7 @@ body {
 <!-- GRADE MODAL -->
 <div class="modal-overlay" id="modal-grade">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota</div>
+    <div class="modal-header"><i class="fas fa-square-root-variable"></i> Nova Nota<button class="modal-close" onclick="closeGradeModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <label class="form-label"><i class="fas fa-book"></i> Disciplina</label>
       <select class="form-select" id="grade-subj"></select>
@@ -1020,7 +1021,7 @@ body {
 <!-- CONFIG (Preconfiguração Acadêmica) MODAL -->
 <div class="modal-overlay" id="modal-config">
   <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
-    <div class="modal-header"><i class="fas fa-sliders"></i> <span id="config-title">Preconfiguração Acadêmica</span></div>
+    <div class="modal-header"><i class="fas fa-sliders"></i> <span id="config-title">Preconfiguração Acadêmica</span><button class="modal-close" onclick="closeConfigModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:12px;">
       <div style="font-size:.78rem;color:var(--text-muted);font-weight:600;line-height:1.4;" id="config-intro">
         Escolha o sistema de avaliação da sua instituição. Isso ajusta a escala de notas, os limites de aprovação e os tipos de avaliação usados nas suas notas.
@@ -1075,7 +1076,7 @@ body {
 <!-- ONBOARDING MODAL (primeira visita) -->
 <div class="modal-overlay" id="modal-onboarding">
   <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
-    <div class="modal-header"><i class="fas fa-hand-sparkles"></i> Bem-vindo ao SmartSchoolPro</div>
+    <div class="modal-header"><i class="fas fa-hand-sparkles"></i> Bem-vindo ao SmartSchoolPro<button class="modal-close" onclick="onboardingSkip()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <div style="font-size:.82rem;color:var(--text-dark);font-weight:600;line-height:1.45;">
         Cada escola avalia de um jeito. Escolha o sistema que a sua instituição usa — você pode ajustar tudo depois.
@@ -1089,7 +1090,7 @@ body {
 <!-- TASK MODAL -->
 <div class="modal-overlay" id="modal-task">
   <div class="modal-box">
-    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span></div>
+    <div class="modal-header"><i class="fas fa-list-check"></i> <span id="task-modal-title">Nova Tarefa</span><button class="modal-close" onclick="closeTaskModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
     <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
       <label class="form-label"><i class="fas fa-pen"></i> Título</label>
       <input class="form-input" id="task-title" maxlength="80" placeholder="Ex: Lista de exercícios cap. 3" />
