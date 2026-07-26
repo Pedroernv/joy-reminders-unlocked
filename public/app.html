@@ -2291,7 +2291,8 @@ function wizardNext(){
 function wizardSkip(){ localStorage.setItem(WIZARD_KEY,'1'); closeWizard(); }
 function maybeShowWizard(){
   if (localStorage.getItem(WIZARD_KEY)) return;
-  if (Array.isArray(subjects) && subjects.length) { localStorage.setItem(WIZARD_KEY,'1'); return; }
+  // Só na primeira visita real: o usuário ainda não gravou nenhuma disciplina própria
+  if (localStorage.getItem(STORAGE_KEY)) { localStorage.setItem(WIZARD_KEY,'1'); return; }
   openWizard();
 }
 /* Primeira visita: wizard da primeira disciplina (sem preconfiguração forçada) */
