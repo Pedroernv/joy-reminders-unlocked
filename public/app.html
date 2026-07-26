@@ -1087,6 +1087,23 @@ body {
   </div>
 </div>
 
+<!-- WIZARD: primeira disciplina -->
+<div class="modal-overlay" id="modal-wizard">
+  <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
+    <div class="modal-header"><i class="fas fa-wand-magic-sparkles"></i> <span id="wz-title">Vamos começar</span><button class="modal-close" onclick="wizardSkip()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <div id="wz-dots" style="display:flex;gap:6px;justify-content:center;margin-bottom:2px;"></div>
+      <div id="wz-icon" style="text-align:center;font-size:2rem;color:var(--accent);"></div>
+      <div id="wz-text" style="font-size:.84rem;color:var(--text-dark);font-weight:600;line-height:1.5;text-align:center;"></div>
+      <div id="wz-hint" style="font-size:.74rem;color:var(--text-muted);font-weight:600;line-height:1.45;text-align:center;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" id="wz-back" onclick="wizardBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
+      <button class="btn-ok" id="wz-next" onclick="wizardNext()">Continuar <i class="fas fa-arrow-right"></i></button>
+    </div>
+  </div>
+</div>
+
 <!-- TASK MODAL -->
 <div class="modal-overlay" id="modal-task">
   <div class="modal-box">
