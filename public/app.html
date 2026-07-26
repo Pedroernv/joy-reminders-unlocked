@@ -1782,7 +1782,7 @@ function askClearData() {
     Object.values(scheduledIds).forEach(v=>{clearTimeout(v.a);clearTimeout(v.e);}); scheduledIds={};
     subjects=[]; openCards={}; saveData(); renderList();
     resetSubjectForm();
-    closeConfirm(); closeDrawer(); closeConfigModal?.(); showToast('Dados apagados!');
+    closeConfirm(); showToast('Dados apagados!');
   };
   document.getElementById('modal-confirm').classList.add('open');
 }
