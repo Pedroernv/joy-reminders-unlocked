@@ -2785,6 +2785,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
     if (e.target === ov) {
       if (ov.id === 'modal-grade') resetGradeFields();
       if (ov.id === 'modal-task') { editingTaskId = null; resetTaskFields(); }
+      if (ov.id === 'modal-wizard') localStorage.setItem(WIZARD_KEY,'1');
     }
   });
 });
