@@ -1585,10 +1585,17 @@ function onSessionEnd(si, sessi) {
 /* ══════════════════════════════════════════
    NOTIFICATIONS
 ══════════════════════════════════════════ */
+const NOTIF_PREF_KEY = 'ssp_v4_notif_enabled';
 function requestNotifPerm() {
   if(!('Notification' in window)){showToast('Não suportado neste navegador.');return;}
-  if(Notification.permission==='granted'){notifGranted=true;updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
-  Notification.requestPermission().then(p=>{notifGranted=p==='granted';updateNotifUI();if(notifGranted)scheduleBackgroundNotifications();showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');});
+  if(Notification.permission==='granted'){notifGranted=true;localStorage.setItem(NOTIF_PREF_KEY,'1');updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
+  Notification.requestPermission().then(p=>{
+    notifGranted=p==='granted';
+    if(notifGranted) localStorage.setItem(NOTIF_PREF_KEY,'1'); else localStorage.removeItem(NOTIF_PREF_KEY);
+    updateNotifUI();
+    if(notifGranted) scheduleBackgroundNotifications();
+    showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');
+  });
 }
 function testNotification() {
   playCurrentSound();
@@ -1599,8 +1606,15 @@ function testNotification() {
   showToast('Som tocado! Notificação enviada.');
 }
 function checkNotifStatus() {
-  if('Notification' in window) notifGranted=Notification.permission==='granted';
+  if('Notification' in window){
+    const perm = Notification.permission;
+    const saved = localStorage.getItem(NOTIF_PREF_KEY) === '1';
+    if (perm === 'granted'){ notifGranted = true; localStorage.setItem(NOTIF_PREF_KEY,'1'); }
+    else if (perm === 'denied'){ notifGranted = false; localStorage.removeItem(NOTIF_PREF_KEY); }
+    else notifGranted = saved; // permissão herdada (iframe/PWA instalado) — mantém a activação do usuário
+  }
   updateNotifUI();
+  if (notifGranted) scheduleBackgroundNotifications();
 }
 function updateNotifUI() {
   const b=document.getElementById('perm-banner'), s=document.getElementById('drawer-notif-status');
