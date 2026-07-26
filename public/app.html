@@ -1401,7 +1401,7 @@ function renderList() {
     document.getElementById('next-pill').textContent = '—';
     document.getElementById('badge-count').textContent = '0';
     document.getElementById('section-count').textContent = '0 disciplinas';
-    document.getElementById('status-bar').classList.remove('show');
+    document.getElementById('status-bar')?.classList.remove('show');
     return;
   }
 
@@ -1497,8 +1497,8 @@ function renderList() {
 
     const mins = minsUntil(nx.date);
     const bar  = document.getElementById('status-bar'), txt = document.getElementById('status-text');
-    bar.classList.add('show');
-    txt.textContent = mins <= 60
+    bar?.classList.add('show');
+    if (txt) txt.textContent = mins <= 60
       ? `${nx.subj.name} (${nx.sess.day.split('-')[0]}) começa ${formatCountdown(mins)}!`
       : `${subjects.length} disciplina${subjects.length>1?'s':''} · Próxima: ${nx.subj.name} ${formatCountdown(mins)}`;
   }
