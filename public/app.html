@@ -1087,6 +1087,23 @@ body {
   </div>
 </div>
 
+<!-- WIZARD: primeira disciplina -->
+<div class="modal-overlay" id="modal-wizard">
+  <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
+    <div class="modal-header"><i class="fas fa-wand-magic-sparkles"></i> <span id="wz-title">Vamos começar</span><button class="modal-close" onclick="wizardSkip()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:14px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <div id="wz-dots" style="display:flex;gap:6px;justify-content:center;margin-bottom:2px;"></div>
+      <div id="wz-icon" style="text-align:center;font-size:2rem;color:var(--accent);"></div>
+      <div id="wz-text" style="font-size:.84rem;color:var(--text-dark);font-weight:600;line-height:1.5;text-align:center;"></div>
+      <div id="wz-hint" style="font-size:.74rem;color:var(--text-muted);font-weight:600;line-height:1.45;text-align:center;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" id="wz-back" onclick="wizardBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
+      <button class="btn-ok" id="wz-next" onclick="wizardNext()">Continuar <i class="fas fa-arrow-right"></i></button>
+    </div>
+  </div>
+</div>
+
 <!-- TASK MODAL -->
 <div class="modal-overlay" id="modal-task">
   <div class="modal-box">
@@ -1384,7 +1401,7 @@ function renderList() {
     document.getElementById('next-pill').textContent = '—';
     document.getElementById('badge-count').textContent = '0';
     document.getElementById('section-count').textContent = '0 disciplinas';
-    document.getElementById('status-bar').classList.remove('show');
+    document.getElementById('status-bar')?.classList.remove('show');
     return;
   }
 
@@ -1480,8 +1497,8 @@ function renderList() {
 
     const mins = minsUntil(nx.date);
     const bar  = document.getElementById('status-bar'), txt = document.getElementById('status-text');
-    bar.classList.add('show');
-    txt.textContent = mins <= 60
+    bar?.classList.add('show');
+    if (txt) txt.textContent = mins <= 60
       ? `${nx.subj.name} (${nx.sess.day.split('-')[0]}) começa ${formatCountdown(mins)}!`
       : `${subjects.length} disciplina${subjects.length>1?'s':''} · Próxima: ${nx.subj.name} ${formatCountdown(mins)}`;
   }
@@ -1568,10 +1585,17 @@ function onSessionEnd(si, sessi) {
 /* ══════════════════════════════════════════
    NOTIFICATIONS
 ══════════════════════════════════════════ */
+const NOTIF_PREF_KEY = 'ssp_v4_notif_enabled';
 function requestNotifPerm() {
   if(!('Notification' in window)){showToast('Não suportado neste navegador.');return;}
-  if(Notification.permission==='granted'){notifGranted=true;updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
-  Notification.requestPermission().then(p=>{notifGranted=p==='granted';updateNotifUI();if(notifGranted)scheduleBackgroundNotifications();showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');});
+  if(Notification.permission==='granted'){notifGranted=true;localStorage.setItem(NOTIF_PREF_KEY,'1');updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
+  Notification.requestPermission().then(p=>{
+    notifGranted=p==='granted';
+    if(notifGranted) localStorage.setItem(NOTIF_PREF_KEY,'1'); else localStorage.removeItem(NOTIF_PREF_KEY);
+    updateNotifUI();
+    if(notifGranted) scheduleBackgroundNotifications();
+    showToast(notifGranted?'Notificações ativadas!':'Permissão negada.');
+  });
 }
 function testNotification() {
   playCurrentSound();
@@ -1582,8 +1606,15 @@ function testNotification() {
   showToast('Som tocado! Notificação enviada.');
 }
 function checkNotifStatus() {
-  if('Notification' in window) notifGranted=Notification.permission==='granted';
+  if('Notification' in window){
+    const perm = Notification.permission;
+    const saved = localStorage.getItem(NOTIF_PREF_KEY) === '1';
+    if (perm === 'granted'){ notifGranted = true; localStorage.setItem(NOTIF_PREF_KEY,'1'); }
+    else if (perm === 'denied'){ notifGranted = false; localStorage.removeItem(NOTIF_PREF_KEY); }
+    else notifGranted = saved; // permissão herdada (iframe/PWA instalado) — mantém a activação do usuário
+  }
   updateNotifUI();
+  if (notifGranted) scheduleBackgroundNotifications();
 }
 function updateNotifUI() {
   const b=document.getElementById('perm-banner'), s=document.getElementById('drawer-notif-status');
@@ -1765,7 +1796,7 @@ function askClearData() {
     Object.values(scheduledIds).forEach(v=>{clearTimeout(v.a);clearTimeout(v.e);}); scheduledIds={};
     subjects=[]; openCards={}; saveData(); renderList();
     resetSubjectForm();
-    closeConfirm(); closeDrawer(); closeConfigModal?.(); showToast('Dados apagados!');
+    closeConfirm(); showToast('Dados apagados!');
   };
   document.getElementById('modal-confirm').classList.add('open');
 }
@@ -2215,8 +2246,57 @@ function onboardingSkip(){
   SSP_CONFIG.set(SSP_CONFIG.get()); // grava default sem forçar preset
   document.getElementById('modal-onboarding').classList.remove('open');
 }
-/* Dispara onboarding após load */
-window.addEventListener('load', () => { setTimeout(maybeShowOnboarding, 400); });
+
+/* ── Wizard: guia para a primeira disciplina ── */
+const WIZARD_KEY = 'ssp_v4_wizard_done';
+const WIZARD_STEPS = [
+  { title:'Bem-vindo!', icon:'fas fa-graduation-cap',
+    text:'O SmartSchoolPro organiza as suas aulas, notas e tarefas num só lugar.',
+    hint:'Em 3 passos rápidos você cria a sua primeira disciplina.' },
+  { title:'1. Nome da disciplina', icon:'fas fa-pen-to-square',
+    text:'Escreva o nome exactamente como aparece no seu horário — ex: "Matemática" ou "Física II".',
+    hint:'Use o mesmo nome sempre: as notas e tarefas ficam ligadas a ele.' },
+  { title:'2. Dias e horários', icon:'fas fa-calendar-week',
+    text:'Adicione uma sessão para cada dia em que tem essa aula, com a hora de início e a duração.',
+    hint:'Pode adicionar várias sessões por semana na mesma disciplina.' },
+  { title:'3. Alertas automáticos', icon:'fas fa-bell',
+    text:'Guarde a disciplina e o app avisa você 1 hora antes de cada aula, com som e alerta na tela.',
+    hint:'Toque em "Criar disciplina" para abrir o formulário já pronto.' },
+];
+let wzStep = 0;
+function wizardRender(){
+  const s = WIZARD_STEPS[wzStep];
+  document.getElementById('wz-title').textContent = s.title;
+  document.getElementById('wz-icon').innerHTML = `<i class="${s.icon}"></i>`;
+  document.getElementById('wz-text').textContent = s.text;
+  document.getElementById('wz-hint').textContent = s.hint;
+  document.getElementById('wz-dots').innerHTML = WIZARD_STEPS.map((_,i)=>
+    `<span style="width:${i===wzStep?18:7}px;height:7px;border-radius:9px;background:${i===wzStep?'var(--accent)':'var(--item-border)'};transition:all .2s;"></span>`).join('');
+  document.getElementById('wz-back').style.visibility = wzStep===0 ? 'hidden' : 'visible';
+  const last = wzStep === WIZARD_STEPS.length-1;
+  document.getElementById('wz-next').innerHTML = last
+    ? '<i class="fas fa-plus"></i> Criar disciplina'
+    : 'Continuar <i class="fas fa-arrow-right"></i>';
+}
+function openWizard(){ wzStep = 0; wizardRender(); document.getElementById('modal-wizard').classList.add('open'); }
+function closeWizard(){ document.getElementById('modal-wizard').classList.remove('open'); }
+function wizardBack(){ if(wzStep>0){ wzStep--; wizardRender(); } }
+function wizardNext(){
+  if (wzStep < WIZARD_STEPS.length-1){ wzStep++; wizardRender(); return; }
+  localStorage.setItem(WIZARD_KEY,'1');
+  closeWizard();
+  startAdd();
+  setTimeout(()=>{ const el=document.getElementById('input-name'); if(el) el.focus(); }, 250);
+}
+function wizardSkip(){ localStorage.setItem(WIZARD_KEY,'1'); closeWizard(); }
+function maybeShowWizard(){
+  if (localStorage.getItem(WIZARD_KEY)) return;
+  // Só na primeira visita real: o usuário ainda não gravou nenhuma disciplina própria
+  if (localStorage.getItem(STORAGE_KEY)) { localStorage.setItem(WIZARD_KEY,'1'); return; }
+  openWizard();
+}
+/* Primeira visita: wizard da primeira disciplina (sem preconfiguração forçada) */
+window.addEventListener('load', () => { setTimeout(maybeShowWizard, 500); });
 
 /* ══════════════════════════════════════════
    GRADES (Notas & Médias)
@@ -2706,6 +2786,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
     if (e.target === ov) {
       if (ov.id === 'modal-grade') resetGradeFields();
       if (ov.id === 'modal-task') { editingTaskId = null; resetTaskFields(); }
+      if (ov.id === 'modal-wizard') localStorage.setItem(WIZARD_KEY,'1');
     }
   });
 });
