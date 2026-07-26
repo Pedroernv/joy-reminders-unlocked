@@ -2232,8 +2232,56 @@ function onboardingSkip(){
   SSP_CONFIG.set(SSP_CONFIG.get()); // grava default sem forçar preset
   document.getElementById('modal-onboarding').classList.remove('open');
 }
-/* Dispara onboarding após load */
-window.addEventListener('load', () => { setTimeout(maybeShowOnboarding, 400); });
+
+/* ── Wizard: guia para a primeira disciplina ── */
+const WIZARD_KEY = 'ssp_v4_wizard_done';
+const WIZARD_STEPS = [
+  { title:'Bem-vindo!', icon:'fas fa-graduation-cap',
+    text:'O SmartSchoolPro organiza as suas aulas, notas e tarefas num só lugar.',
+    hint:'Em 3 passos rápidos você cria a sua primeira disciplina.' },
+  { title:'1. Nome da disciplina', icon:'fas fa-pen-to-square',
+    text:'Escreva o nome exactamente como aparece no seu horário — ex: "Matemática" ou "Física II".',
+    hint:'Use o mesmo nome sempre: as notas e tarefas ficam ligadas a ele.' },
+  { title:'2. Dias e horários', icon:'fas fa-calendar-week',
+    text:'Adicione uma sessão para cada dia em que tem essa aula, com a hora de início e a duração.',
+    hint:'Pode adicionar várias sessões por semana na mesma disciplina.' },
+  { title:'3. Alertas automáticos', icon:'fas fa-bell',
+    text:'Guarde a disciplina e o app avisa você 1 hora antes de cada aula, com som e alerta na tela.',
+    hint:'Toque em "Criar disciplina" para abrir o formulário já pronto.' },
+];
+let wzStep = 0;
+function wizardRender(){
+  const s = WIZARD_STEPS[wzStep];
+  document.getElementById('wz-title').textContent = s.title;
+  document.getElementById('wz-icon').innerHTML = `<i class="${s.icon}"></i>`;
+  document.getElementById('wz-text').textContent = s.text;
+  document.getElementById('wz-hint').textContent = s.hint;
+  document.getElementById('wz-dots').innerHTML = WIZARD_STEPS.map((_,i)=>
+    `<span style="width:${i===wzStep?18:7}px;height:7px;border-radius:9px;background:${i===wzStep?'var(--accent)':'var(--item-border)'};transition:all .2s;"></span>`).join('');
+  document.getElementById('wz-back').style.visibility = wzStep===0 ? 'hidden' : 'visible';
+  const last = wzStep === WIZARD_STEPS.length-1;
+  document.getElementById('wz-next').innerHTML = last
+    ? '<i class="fas fa-plus"></i> Criar disciplina'
+    : 'Continuar <i class="fas fa-arrow-right"></i>';
+}
+function openWizard(){ wzStep = 0; wizardRender(); document.getElementById('modal-wizard').classList.add('open'); }
+function closeWizard(){ document.getElementById('modal-wizard').classList.remove('open'); }
+function wizardBack(){ if(wzStep>0){ wzStep--; wizardRender(); } }
+function wizardNext(){
+  if (wzStep < WIZARD_STEPS.length-1){ wzStep++; wizardRender(); return; }
+  localStorage.setItem(WIZARD_KEY,'1');
+  closeWizard();
+  startAdd();
+  setTimeout(()=>{ const el=document.getElementById('input-name'); if(el) el.focus(); }, 250);
+}
+function wizardSkip(){ localStorage.setItem(WIZARD_KEY,'1'); closeWizard(); }
+function maybeShowWizard(){
+  if (localStorage.getItem(WIZARD_KEY)) return;
+  if (Array.isArray(subjects) && subjects.length) { localStorage.setItem(WIZARD_KEY,'1'); return; }
+  openWizard();
+}
+/* Primeira visita: wizard da primeira disciplina (sem preconfiguração forçada) */
+window.addEventListener('load', () => { setTimeout(maybeShowWizard, 500); });
 
 /* ══════════════════════════════════════════
    GRADES (Notas & Médias)
