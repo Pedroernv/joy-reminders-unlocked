@@ -11,6 +11,11 @@ export const Route = createFileRoute("/auth")({
       { title: "Entrar · SmartSchoolPro" },
       { name: "description", content: "Entre ou crie a sua conta no SmartSchoolPro para sincronizar disciplinas, notas e tarefas." },
     ],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Merriweather:wght@400;700;900&display=swap" },
+    ],
   }),
 });
 
@@ -93,7 +98,7 @@ function AuthPage() {
             alt="SmartSchoolPro"
             style={{ width: 72, height: 72, margin: "0 auto 12px", display: "block", objectFit: "contain" }}
           />
-          <h1 style={{ margin: 0, fontSize: 22, color: "#1a2535" }}>SmartSchoolPro</h1>
+          <h1 style={{ margin: 0, fontSize: 22, color: "#1a2535", fontFamily: "'Merriweather', serif", fontWeight: 700 }}>SmartSchoolPro</h1>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7f8f" }}>
             {mode === "signin" ? "Entre na sua conta" : "Crie a sua conta"}
           </p>
