@@ -1221,7 +1221,11 @@ function loadData() {
   if (snd) currentSound = snd;
   updateSoundLabel();
 }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects)); }
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
+  // Reagenda notificações (nativas ou do service worker) sempre que a grade muda
+  try { if (typeof scheduleBackgroundNotifications === 'function') scheduleBackgroundNotifications(); } catch {}
+}
 
 /* ══════════════════════════════════════════
    AUDIO — Web Audio API
@@ -1570,7 +1574,10 @@ function inAppAlert(si, sessi) {
   playCurrentSound();
   document.getElementById('notif-dot').classList.add('active');
   showAlertFor(subj.name, sess);
-  if (notifGranted) new Notification('SmartSchoolPro', { body:`${subj.name} começa em 1h! (${DAY_SHORT[sess.day]} ${sess.hour})` });
+  // No nativo o SO já dispara a notificação agendada; aqui só o alerta em tela.
+  if (notifGranted && !(typeof Native !== 'undefined' && Native.isNative) && 'Notification' in window) {
+    try { new Notification('SmartSchoolPro', { body:`${subj.name} começa em 1h! (${DAY_SHORT[sess.day]} ${sess.hour})` }); } catch {}
+  }
 }
 
 function onSessionEnd(si, sessi) {
@@ -1588,6 +1595,15 @@ function onSessionEnd(si, sessi) {
 ══════════════════════════════════════════ */
 const NOTIF_PREF_KEY = 'ssp_v4_notif_enabled';
 function requestNotifPerm() {
+  if (typeof Native !== 'undefined' && Native.isNative) {
+    nativeEnsurePermission().then(ok=>{
+      notifGranted = ok;
+      if (ok) { localStorage.setItem(NOTIF_PREF_KEY,'1'); nativeScheduleAll(); } else localStorage.removeItem(NOTIF_PREF_KEY);
+      updateNotifUI();
+      showToast(ok?'Notificações activadas!':'Permissão negada nas configurações do sistema.');
+    });
+    return;
+  }
   if(!('Notification' in window)){showToast('Não suportado neste navegador.');return;}
   if(Notification.permission==='granted'){notifGranted=true;localStorage.setItem(NOTIF_PREF_KEY,'1');updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
   Notification.requestPermission().then(p=>{
@@ -1600,6 +1616,21 @@ function requestNotifPerm() {
 }
 function testNotification() {
   playCurrentSound();
+  if (typeof Native !== 'undefined' && Native.isNative) {
+    (async()=>{
+      const ok = notifGranted || await nativeEnsurePermission();
+      if (!ok) { showToast('Permissão de notificações desactivada.'); return; }
+      try {
+        await Native.LN.schedule({ notifications: [{
+          id: 99, title: 'SmartSchoolPro', body: 'Notificações nativas funcionando!',
+          channelId: 'ssp-aulas', smallIcon: 'ic_stat_icon', iconColor: '#5B7FA6',
+          schedule: { at: new Date(Date.now()+2000), allowWhileIdle: true },
+        }]});
+        showToast('Notificação de teste em 2s (feche o app para ver o pop-up).');
+      } catch { showToast('Falha ao enviar notificação nativa.'); }
+    })();
+    return;
+  }
   if(notifGranted){
     if(swReg && swReg.active){ swReg.active.postMessage({type:'TEST_NOTIFICATION'}); }
     else new Notification('SmartSchoolPro',{body:'Notificações funcionando!'});
@@ -1607,6 +1638,7 @@ function testNotification() {
   showToast('Som tocado! Notificação enviada.');
 }
 function checkNotifStatus() {
+  if (typeof Native !== 'undefined' && Native.isNative) { nativeInit(); return; }
   if('Notification' in window){
     const perm = Notification.permission;
     const saved = localStorage.getItem(NOTIF_PREF_KEY) === '1';
@@ -1976,6 +2008,116 @@ function renderCalendar(){
 }
 
 /* ══════════════════════════════════════════
+   CAPACITOR — NOTIFICAÇÕES NATIVAS
+   (Android/iOS: agendamento no SO, funciona
+    com o app fechado, 1h antes de cada aula)
+════════════════════════════════════════════ */
+var Native = {
+  get cap(){ return window.Capacitor; },
+  get isNative(){ try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch { return false; } },
+  get LN(){ try { return window.Capacitor.Plugins.LocalNotifications; } catch { return null; } },
+  get platform(){ try { return window.Capacitor.getPlatform(); } catch { return 'web'; } },
+};
+
+// id determinístico e estável por sessão
+function nativeNotifId(si, sessi){ return 100000 + si * 100 + sessi; }
+
+async function nativeEnsurePermission(){
+  const LN = Native.LN; if (!LN) return false;
+  try {
+    let st = await LN.checkPermissions();
+    if (st.display !== 'granted') st = await LN.requestPermissions();
+    return st.display === 'granted';
+  } catch { return false; }
+}
+
+// Agenda uma notificação semanal recorrente 1h antes de cada sessão.
+async function nativeScheduleAll(){
+  const LN = Native.LN; if (!LN || !notifGranted) return;
+  try {
+    const pend = await LN.getPending();
+    if (pend && pend.notifications && pend.notifications.length) {
+      await LN.cancel({ notifications: pend.notifications.filter(n => Number(n.id) >= 100000) });
+    }
+  } catch {}
+
+  const list = [];
+  subjects.forEach((subj, si) => {
+    (subj.sessions || []).forEach((sess, sessi) => {
+      const dayNum = DAY_NUM[sess.day];
+      if (dayNum === undefined) return;
+      const [h, m] = String(sess.hour).split(':').map(Number);
+      // desloca 60 minutos para trás (pode cair no dia anterior)
+      let total = h * 60 + m - 60;
+      let weekday = dayNum;               // 0=Dom ... 6=Sáb (JS)
+      if (total < 0) { total += 24 * 60; weekday = (weekday + 6) % 7; }
+      const ah = Math.floor(total / 60), am = total % 60;
+      list.push({
+        id: nativeNotifId(si, sessi),
+        title: 'SmartSchoolPro',
+        body: `${subj.name} começa em 1h! (${DAY_SHORT[sess.day] || sess.day} ${sess.hour})`,
+        smallIcon: 'ic_stat_icon',
+        iconColor: '#5B7FA6',
+        channelId: 'ssp-aulas',
+        extra: { si, sessi, subject: subj.name, hour: sess.hour, day: sess.day },
+        schedule: {
+          on: { weekday: weekday + 1, hour: ah, minute: am }, // Capacitor: 1=Domingo
+          allowWhileIdle: true,
+          repeats: true,
+        },
+      });
+    });
+  });
+
+  if (!list.length) return;
+  try { await LN.schedule({ notifications: list }); }
+  catch (e) { console.warn('Native schedule falhou', e); }
+}
+
+async function nativeInit(){
+  if (!Native.isNative) return;
+  const LN = Native.LN; if (!LN) return;
+  // Canal Android de alta prioridade (som + pop-up heads-up)
+  try {
+    await LN.createChannel({
+      id: 'ssp-aulas',
+      name: 'Alertas de aulas',
+      description: 'Aviso 1 hora antes do início de cada aula',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      sound: 'beep.wav',
+    });
+  } catch {}
+
+  // Toque na notificação → abre o modal de alerta da aula
+  try {
+    LN.addListener('localNotificationActionPerformed', (ev) => {
+      const ex = (ev && ev.notification && ev.notification.extra) || {};
+      const subj = subjects[ex.si];
+      const sess = subj && subj.sessions ? subj.sessions[ex.sessi] : null;
+      if (subj && sess) { playCurrentSound(); showAlertFor(subj.name, sess); }
+      else showScreen('home');
+    });
+    LN.addListener('localNotificationReceived', () => { try { playCurrentSound(); } catch {} });
+  } catch {}
+
+  const saved = localStorage.getItem(NOTIF_PREF_KEY) === '1';
+  try {
+    const st = await LN.checkPermissions();
+    notifGranted = st.display === 'granted';
+  } catch { notifGranted = saved; }
+  if (notifGranted) { localStorage.setItem(NOTIF_PREF_KEY, '1'); await nativeScheduleAll(); }
+  updateNotifUI();
+
+  // Reagenda quando o app volta ao primeiro plano (dados podem ter mudado)
+  try {
+    const App = window.Capacitor.Plugins.App;
+    if (App) App.addListener('appStateChange', (s) => { if (s.isActive && notifGranted) nativeScheduleAll(); });
+  } catch {}
+}
+
+/* ══════════════════════════════════════════
    SERVICE WORKER + BACKGROUND NOTIFICATIONS
 ════════════════════════════════════════════ */
 let swReg = null;
@@ -1983,6 +2125,7 @@ const isInIframe = (()=>{ try { return window.self !== window.top; } catch { ret
 const isPreviewHost = location.hostname.includes('id-preview--') || location.hostname.includes('lovableproject.com') || location.hostname.includes('lovable.app');
 
 async function registerSW(){
+  if (Native.isNative) return; // no app nativo o SO cuida do agendamento
   if (!('serviceWorker' in navigator)) return;
   if (isInIframe) {
     // Skip in iframe preview — SW would interfere; unregister any lingering one.
@@ -1993,6 +2136,7 @@ async function registerSW(){
 }
 
 async function scheduleBackgroundNotifications(){
+  if (Native.isNative) { await nativeScheduleAll(); return; }
   if (!swReg || !notifGranted) return;
   // Build list of notifications for next 7 days, 1h before each session occurrence.
   const out = [];
