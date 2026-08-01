@@ -2008,7 +2008,7 @@ function renderCalendar(){
    (Android/iOS: agendamento no SO, funciona
     com o app fechado, 1h antes de cada aula)
 ════════════════════════════════════════════ */
-const Native = {
+var Native = {
   get cap(){ return window.Capacitor; },
   get isNative(){ try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch { return false; } },
   get LN(){ try { return window.Capacitor.Plugins.LocalNotifications; } catch { return null; } },
