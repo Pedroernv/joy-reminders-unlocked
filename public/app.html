@@ -1221,7 +1221,11 @@ function loadData() {
   if (snd) currentSound = snd;
   updateSoundLabel();
 }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects)); }
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
+  // Reagenda notificações (nativas ou do service worker) sempre que a grade muda
+  try { if (typeof scheduleBackgroundNotifications === 'function') scheduleBackgroundNotifications(); } catch {}
+}
 
 /* ══════════════════════════════════════════
    AUDIO — Web Audio API
