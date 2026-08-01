@@ -1570,7 +1570,10 @@ function inAppAlert(si, sessi) {
   playCurrentSound();
   document.getElementById('notif-dot').classList.add('active');
   showAlertFor(subj.name, sess);
-  if (notifGranted) new Notification('SmartSchoolPro', { body:`${subj.name} começa em 1h! (${DAY_SHORT[sess.day]} ${sess.hour})` });
+  // No nativo o SO já dispara a notificação agendada; aqui só o alerta em tela.
+  if (notifGranted && !(typeof Native !== 'undefined' && Native.isNative) && 'Notification' in window) {
+    try { new Notification('SmartSchoolPro', { body:`${subj.name} começa em 1h! (${DAY_SHORT[sess.day]} ${sess.hour})` }); } catch {}
+  }
 }
 
 function onSessionEnd(si, sessi) {
@@ -1588,6 +1591,15 @@ function onSessionEnd(si, sessi) {
 ══════════════════════════════════════════ */
 const NOTIF_PREF_KEY = 'ssp_v4_notif_enabled';
 function requestNotifPerm() {
+  if (typeof Native !== 'undefined' && Native.isNative) {
+    nativeEnsurePermission().then(ok=>{
+      notifGranted = ok;
+      if (ok) { localStorage.setItem(NOTIF_PREF_KEY,'1'); nativeScheduleAll(); } else localStorage.removeItem(NOTIF_PREF_KEY);
+      updateNotifUI();
+      showToast(ok?'Notificações activadas!':'Permissão negada nas configurações do sistema.');
+    });
+    return;
+  }
   if(!('Notification' in window)){showToast('Não suportado neste navegador.');return;}
   if(Notification.permission==='granted'){notifGranted=true;localStorage.setItem(NOTIF_PREF_KEY,'1');updateNotifUI();scheduleBackgroundNotifications();showToast('Notificações já ativas!');return;}
   Notification.requestPermission().then(p=>{
@@ -1600,6 +1612,21 @@ function requestNotifPerm() {
 }
 function testNotification() {
   playCurrentSound();
+  if (typeof Native !== 'undefined' && Native.isNative) {
+    (async()=>{
+      const ok = notifGranted || await nativeEnsurePermission();
+      if (!ok) { showToast('Permissão de notificações desactivada.'); return; }
+      try {
+        await Native.LN.schedule({ notifications: [{
+          id: 99, title: 'SmartSchoolPro', body: 'Notificações nativas funcionando!',
+          channelId: 'ssp-aulas', smallIcon: 'ic_stat_icon', iconColor: '#5B7FA6',
+          schedule: { at: new Date(Date.now()+2000), allowWhileIdle: true },
+        }]});
+        showToast('Notificação de teste em 2s (feche o app para ver o pop-up).');
+      } catch { showToast('Falha ao enviar notificação nativa.'); }
+    })();
+    return;
+  }
   if(notifGranted){
     if(swReg && swReg.active){ swReg.active.postMessage({type:'TEST_NOTIFICATION'}); }
     else new Notification('SmartSchoolPro',{body:'Notificações funcionando!'});
@@ -1607,6 +1634,7 @@ function testNotification() {
   showToast('Som tocado! Notificação enviada.');
 }
 function checkNotifStatus() {
+  if (typeof Native !== 'undefined' && Native.isNative) { nativeInit(); return; }
   if('Notification' in window){
     const perm = Notification.permission;
     const saved = localStorage.getItem(NOTIF_PREF_KEY) === '1';
