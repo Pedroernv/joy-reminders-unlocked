@@ -31,3 +31,11 @@ dist-ssr
 *.sln
 *.sw?
 capacitor-www/
+
+# Capacitor / build nativo
+capacitor-www/
+android/
+ios/
+*.keystore
+*.jks
+key.properties
