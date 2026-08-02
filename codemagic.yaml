@@ -49,7 +49,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - user@example.com
+          - pedroernita22@gmail.com
         notify:
           success: true
           failure: true
