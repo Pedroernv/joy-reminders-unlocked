@@ -3036,13 +3036,112 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
       await sb.auth.signOut();
       if (typeof showToast === 'function') showToast('Sessão terminada.');
     } else {
-      window.location.href = '/auth';
+      window.openAuthModal();
+    }
+  };
+
+  // ── Auth modal (mesmo fluxo da versão website) ──
+  let authMode = 'signin';
+  const $ = (id) => document.getElementById(id);
+
+  function authMsg(type, text) {
+    const el = $('auth-msg');
+    if (!el) return;
+    if (!text) { el.style.display = 'none'; el.textContent = ''; return; }
+    el.style.display = 'block';
+    el.textContent = text;
+    el.style.background = type === 'err' ? '#fdeaea' : '#e7f4e4';
+    el.style.color = type === 'err' ? '#a13a3a' : '#2b6d2b';
+  }
+
+  function renderAuthMode() {
+    $('auth-title').textContent = authMode === 'signin' ? 'Entrar na conta' : 'Criar conta';
+    $('auth-submit-label').textContent = authMode === 'signin' ? 'Entrar' : 'Criar conta';
+    $('auth-switch-text').textContent = authMode === 'signin' ? 'Ainda não tem conta?' : 'Já tem conta?';
+    $('auth-switch-btn').textContent = authMode === 'signin' ? 'Criar conta' : 'Entrar';
+    $('auth-pass').setAttribute('autocomplete', authMode === 'signin' ? 'current-password' : 'new-password');
+    authMsg(null, '');
+  }
+
+  window.toggleAuthMode = () => { authMode = authMode === 'signin' ? 'signup' : 'signin'; renderAuthMode(); };
+
+  window.openAuthModal = () => {
+    authMode = 'signin';
+    $('auth-email').value = '';
+    $('auth-pass').value = '';
+    renderAuthMode();
+    $('modal-auth').classList.add('open');
+    if (typeof closeDrawer === 'function') closeDrawer();
+  };
+
+  window.closeAuthModal = () => {
+    $('modal-auth').classList.remove('open');
+    $('auth-email').value = '';
+    $('auth-pass').value = '';
+    authMsg(null, '');
+  };
+
+  function setAuthBusy(busy) {
+    $('auth-submit').disabled = busy;
+    $('auth-google').disabled = busy;
+    $('auth-submit-label').textContent = busy ? 'Aguarde…' : (authMode === 'signin' ? 'Entrar' : 'Criar conta');
+  }
+
+  window.authSubmit = async () => {
+    const email = $('auth-email').value.trim();
+    const password = $('auth-pass').value;
+    if (!email || password.length < 6) {
+      authMsg('err', 'Informe um email válido e uma palavra-passe com pelo menos 6 caracteres.');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      if (authMode === 'signup') {
+        const { error } = await sb.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: location.origin + '/app.html' },
+        });
+        if (error) throw error;
+        authMsg('ok', 'Conta criada! Verifique o seu email para confirmar (ou já pode entrar).');
+        setAuthBusy(false);
+        return;
+      }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      window.closeAuthModal();
+      if (typeof showToast === 'function') showToast('Sessão iniciada.');
+    } catch (err) {
+      authMsg('err', err?.message || 'Erro ao autenticar.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  window.authGoogle = async () => {
+    setAuthBusy(true);
+    authMsg(null, '');
+    try {
+      const { createLovableAuth } = await import('https://esm.sh/@lovable.dev/cloud-auth-js');
+      const lovableAuth = createLovableAuth();
+      const result = await lovableAuth.signInWithOAuth('google', { redirect_uri: location.origin + '/app.html' });
+      if (result?.redirected) return;
+      if (result?.error) throw result.error;
+      if (result?.tokens) await sb.auth.setSession(result.tokens);
+      window.closeAuthModal();
+      if (typeof showToast === 'function') showToast('Sessão iniciada com Google.');
+    } catch (err) {
+      authMsg('err', err?.message || 'Não foi possível entrar com Google.');
+    } finally {
+      setAuthBusy(false);
     }
   };
 
   const { data } = await sb.auth.getSession();
   renderAuthUI(data.session);
-  sb.auth.onAuthStateChange((_e, session) => renderAuthUI(session));
+  sb.auth.onAuthStateChange((_e, session) => {
+    renderAuthUI(session);
+    if (session?.user) $('modal-auth')?.classList.remove('open');
+  });
 </script>
 
 <!-- ══ SYNC automático (localStorage ↔ Cloud) ══ -->
