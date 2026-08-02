@@ -7,7 +7,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       java: 17
-      node: 20
+      node: 22
       android_signing:
         - smartschoolpro_keystore   # nome do keystore carregado em Codemagic > Code signing identities
       groups:
@@ -65,7 +65,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       java: 17
-      node: 20
+      node: 22
     scripts:
       - name: Instalar dependências
         script: npm ci || npm install
