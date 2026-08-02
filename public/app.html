@@ -1039,6 +1039,46 @@ body {
   </div>
 </div>
 
+<!-- AUTH MODAL (login/registo dentro do app) -->
+<div class="modal-overlay" id="modal-auth">
+  <div class="modal-box" style="max-height:92vh;overflow-y:auto;">
+    <div class="modal-header"><i class="fas fa-right-to-bracket"></i> <span id="auth-title">Entrar na conta</span><button class="modal-close" onclick="closeAuthModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:18px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <div style="text-align:center;margin-bottom:2px;">
+        <img src="/__l5e/assets-v1/8bcbcfa0-40d3-4063-8f8f-92b18eafc1cf/icon.png" alt="SmartSchoolPro" style="width:64px;height:64px;object-fit:contain;margin:0 auto 6px;display:block;" />
+        <div style="font-family:'Merriweather',serif;font-weight:700;color:var(--text-dark);font-size:1rem;">SmartSchoolPro</div>
+        <div id="auth-sub" style="font-size:.78rem;color:var(--text-muted);margin-top:2px;">Sincronize disciplinas, notas e tarefas.</div>
+      </div>
+
+      <button id="auth-google" onclick="authGoogle()" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--item-border);background:#fff;color:#1a2535;font-size:.88rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.9 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.6 29.3 4.6 24 4.6c-7.7 0-14.4 4.4-17.7 10.1z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.2-7.2 2.2-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.4 39.6 16.1 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.5 5.6l6.2 5.2c-.4.4 6.8-5 6.8-14.8 0-1.3-.1-2.4-.4-3.5z"/>
+        </svg>
+        Continuar com Google
+      </button>
+
+      <div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:.74rem;margin:2px 0;">
+        <div style="flex:1;height:1px;background:var(--item-border);"></div>ou<div style="flex:1;height:1px;background:var(--item-border);"></div>
+      </div>
+
+      <label class="form-label"><i class="fas fa-envelope"></i> Email</label>
+      <input class="form-input" id="auth-email" type="email" autocomplete="email" placeholder="voce@escola.com" />
+      <label class="form-label"><i class="fas fa-lock"></i> Palavra-passe</label>
+      <input class="form-input" id="auth-pass" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres" />
+      <div id="auth-msg" style="display:none;font-size:.78rem;border-radius:8px;padding:8px 10px;"></div>
+      <button class="btn-ok" id="auth-submit" onclick="authSubmit()" style="width:100%;margin-top:4px;"><i class="fas fa-check"></i> <span id="auth-submit-label">Entrar</span></button>
+      <div style="text-align:center;font-size:.78rem;color:var(--text-muted);padding:6px 0 2px;">
+        <span id="auth-switch-text">Ainda não tem conta?</span>
+        <button onclick="toggleAuthMode()" style="background:none;border:none;color:var(--text-dark);font-weight:800;cursor:pointer;padding:0 2px;"><span id="auth-switch-btn">Criar conta</span></button>
+      </div>
+      <button onclick="closeAuthModal()" style="background:none;border:none;color:var(--text-muted);font-size:.76rem;cursor:pointer;padding:0 0 10px;">Continuar sem conta →</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIG (Preconfiguração Acadêmica) MODAL -->
 <div class="modal-overlay" id="modal-config">
   <div class="modal-box" style="max-height:88vh;overflow-y:auto;">
@@ -2996,13 +3036,112 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
       await sb.auth.signOut();
       if (typeof showToast === 'function') showToast('Sessão terminada.');
     } else {
-      window.location.href = '/auth';
+      window.openAuthModal();
+    }
+  };
+
+  // ── Auth modal (mesmo fluxo da versão website) ──
+  let authMode = 'signin';
+  const $ = (id) => document.getElementById(id);
+
+  function authMsg(type, text) {
+    const el = $('auth-msg');
+    if (!el) return;
+    if (!text) { el.style.display = 'none'; el.textContent = ''; return; }
+    el.style.display = 'block';
+    el.textContent = text;
+    el.style.background = type === 'err' ? '#fdeaea' : '#e7f4e4';
+    el.style.color = type === 'err' ? '#a13a3a' : '#2b6d2b';
+  }
+
+  function renderAuthMode() {
+    $('auth-title').textContent = authMode === 'signin' ? 'Entrar na conta' : 'Criar conta';
+    $('auth-submit-label').textContent = authMode === 'signin' ? 'Entrar' : 'Criar conta';
+    $('auth-switch-text').textContent = authMode === 'signin' ? 'Ainda não tem conta?' : 'Já tem conta?';
+    $('auth-switch-btn').textContent = authMode === 'signin' ? 'Criar conta' : 'Entrar';
+    $('auth-pass').setAttribute('autocomplete', authMode === 'signin' ? 'current-password' : 'new-password');
+    authMsg(null, '');
+  }
+
+  window.toggleAuthMode = () => { authMode = authMode === 'signin' ? 'signup' : 'signin'; renderAuthMode(); };
+
+  window.openAuthModal = () => {
+    authMode = 'signin';
+    $('auth-email').value = '';
+    $('auth-pass').value = '';
+    renderAuthMode();
+    $('modal-auth').classList.add('open');
+    if (typeof closeDrawer === 'function') closeDrawer();
+  };
+
+  window.closeAuthModal = () => {
+    $('modal-auth').classList.remove('open');
+    $('auth-email').value = '';
+    $('auth-pass').value = '';
+    authMsg(null, '');
+  };
+
+  function setAuthBusy(busy) {
+    $('auth-submit').disabled = busy;
+    $('auth-google').disabled = busy;
+    $('auth-submit-label').textContent = busy ? 'Aguarde…' : (authMode === 'signin' ? 'Entrar' : 'Criar conta');
+  }
+
+  window.authSubmit = async () => {
+    const email = $('auth-email').value.trim();
+    const password = $('auth-pass').value;
+    if (!email || password.length < 6) {
+      authMsg('err', 'Informe um email válido e uma palavra-passe com pelo menos 6 caracteres.');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      if (authMode === 'signup') {
+        const { error } = await sb.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: location.origin + '/app.html' },
+        });
+        if (error) throw error;
+        authMsg('ok', 'Conta criada! Verifique o seu email para confirmar (ou já pode entrar).');
+        setAuthBusy(false);
+        return;
+      }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      window.closeAuthModal();
+      if (typeof showToast === 'function') showToast('Sessão iniciada.');
+    } catch (err) {
+      authMsg('err', err?.message || 'Erro ao autenticar.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  window.authGoogle = async () => {
+    setAuthBusy(true);
+    authMsg(null, '');
+    try {
+      const { createLovableAuth } = await import('https://esm.sh/@lovable.dev/cloud-auth-js');
+      const lovableAuth = createLovableAuth();
+      const result = await lovableAuth.signInWithOAuth('google', { redirect_uri: location.origin + '/app.html' });
+      if (result?.redirected) return;
+      if (result?.error) throw result.error;
+      if (result?.tokens) await sb.auth.setSession(result.tokens);
+      window.closeAuthModal();
+      if (typeof showToast === 'function') showToast('Sessão iniciada com Google.');
+    } catch (err) {
+      authMsg('err', err?.message || 'Não foi possível entrar com Google.');
+    } finally {
+      setAuthBusy(false);
     }
   };
 
   const { data } = await sb.auth.getSession();
   renderAuthUI(data.session);
-  sb.auth.onAuthStateChange((_e, session) => renderAuthUI(session));
+  sb.auth.onAuthStateChange((_e, session) => {
+    renderAuthUI(session);
+    if (session?.user) $('modal-auth')?.classList.remove('open');
+  });
 </script>
 
 <!-- ══ SYNC automático (localStorage ↔ Cloud) ══ -->
