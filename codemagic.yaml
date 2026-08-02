@@ -42,7 +42,7 @@ workflows:
         script: |
           cd android
           ./gradlew bundleRelease
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
