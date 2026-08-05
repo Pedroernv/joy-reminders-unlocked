@@ -1805,6 +1805,8 @@ function checkAlertsTick() {
   });
   // Limpa marcações antigas (>2h passadas)
   if (alertedOccurrences.size > 200) alertedOccurrences.clear();
+  // Lembretes de leituras/TPC agendados (15 min antes)
+  if (typeof checkStudyReminders === 'function') { try { checkStudyReminders(); } catch {} }
 }
 
 function inAppAlert(si, sessi) {
@@ -1971,7 +1973,7 @@ function showScreen(id) {
   if (leavingForm && id !== 'form') resetSubjectForm();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
+  ['home','form','progress','calendar','grades','tasks','reader'].forEach(k=>{
     const h=document.getElementById('header-'+k); if(h) h.style.display=(id===k?'flex':'none');
   });
   document.querySelectorAll('.d-item').forEach(el=>el.classList.remove('active'));
@@ -1980,6 +1982,7 @@ function showScreen(id) {
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
   if(id==='tasks')    renderTasks();
+  if(id==='reader' && typeof renderReader === 'function') renderReader();
 }
 
 function resetSubjectForm() {
