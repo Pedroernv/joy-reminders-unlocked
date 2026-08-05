@@ -674,6 +674,68 @@ body {
 .clickable-empty:active { transform: scale(.98); }
 .clickable-empty .empty-title { color: var(--accent); }
 
+/* ══ LEITURA & TAREFAS ══ */
+.rd-tabs { display:flex; gap:8px; }
+.rd-tab {
+  flex:1; border:1.5px solid var(--item-border); background:var(--item-bg); color:var(--text-muted);
+  border-radius:12px; padding:10px; font-family:'Outfit',sans-serif; font-size:.82rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:background .15s,color .15s;
+}
+.rd-tab.active { background:var(--header-bg); border-color:var(--header-bg); color:#fff; }
+.rd-search { display:flex; align-items:center; gap:8px; background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:12px; padding:9px 12px; }
+.rd-search i { color:var(--text-muted); font-size:.85rem; }
+.rd-search input { flex:1; border:none; background:transparent; outline:none; font-family:'Outfit',sans-serif; font-size:.88rem; color:var(--text-dark); }
+.rd-card {
+  background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:var(--radius);
+  padding:12px 13px; display:flex; gap:11px; align-items:center; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:transform .12s;
+}
+.rd-card:active { transform:scale(.985); }
+.rd-card-ic { width:38px; height:38px; border-radius:11px; background:rgba(91,127,166,.15); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.rd-card-ic.done { background:var(--green-light); color:var(--green-dark); }
+.rd-card-body { flex:1; min-width:0; }
+.rd-card-title { font-size:.9rem; font-weight:800; color:var(--text-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rd-card-title.done { text-decoration:line-through; color:var(--text-muted); }
+.rd-card-sub { font-size:.74rem; font-weight:600; color:var(--text-muted); margin-top:2px; }
+.rd-bar { height:4px; border-radius:4px; background:var(--item-border); margin-top:7px; overflow:hidden; }
+.rd-bar > div { height:100%; background:var(--accent); border-radius:4px; transition:width .3s; }
+.rd-card-actions { display:flex; gap:4px; flex-shrink:0; }
+.rd-mini { width:32px; height:32px; border:none; border-radius:9px; background:transparent; color:var(--text-muted); font-size:.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.rd-mini:active { background:rgba(0,0,0,.06); }
+.rd-mini.del:active { background:var(--red-light); color:var(--red); }
+.rd-mini.ok { color:var(--green-dark); }
+.rd-stat { flex:1; min-width:96px; background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:12px; padding:10px 12px; }
+.rd-stat-v { font-family:'Merriweather',serif; font-size:1.15rem; font-weight:700; color:var(--accent); }
+.rd-stat-l { font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+.rd-day-label { font-size:.74rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+.rd-seg { display:flex; gap:8px; }
+.rd-seg-btn { flex:1; border:1.5px solid var(--item-border); background:transparent; color:var(--text-muted); border-radius:10px; padding:9px; font-family:'Outfit',sans-serif; font-size:.8rem; font-weight:800; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+.rd-seg-btn.active { background:rgba(91,127,166,.14); border-color:var(--accent); color:var(--accent); }
+
+/* ── Leitor de PDF em tela cheia ── */
+.pdf-reader { position:fixed; inset:0; z-index:120; display:none; flex-direction:column; background:#fff; }
+.pdf-reader.open { display:flex; }
+.pdf-reader[data-theme="light"] { background:#ffffff; --pdf-fg:#20303c; --pdf-chrome:rgba(255,255,255,.92); }
+.pdf-reader[data-theme="sepia"] { background:#f4ecd8; --pdf-fg:#4a3b28; --pdf-chrome:rgba(244,236,216,.94); }
+.pdf-reader[data-theme="dark"]  { background:#12181d; --pdf-fg:#e6edf3; --pdf-chrome:rgba(18,24,29,.94); }
+.pdf-reader[data-theme="dark"] #pdf-canvas { filter:invert(1) hue-rotate(180deg); }
+.pdf-reader[data-theme="sepia"] #pdf-canvas { filter:sepia(.35) saturate(.9); }
+.pdf-progress { height:3px; background:rgba(0,0,0,.08); flex-shrink:0; padding-top:env(safe-area-inset-top); }
+.pdf-progress-bar { height:3px; width:0%; background:var(--accent); transition:width .3s; }
+.pdf-topbar, .pdf-bottombar {
+  display:flex; align-items:center; gap:6px; padding:8px 10px; flex-shrink:0;
+  background:var(--pdf-chrome); color:var(--pdf-fg); backdrop-filter:blur(12px);
+}
+.pdf-bottombar { justify-content:space-between; padding-bottom:calc(8px + env(safe-area-inset-bottom)); border-top:1px solid rgba(0,0,0,.07); }
+.pdf-title { flex:1; font-family:'Merriweather',serif; font-size:.9rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pdf-ic { width:38px; height:38px; border:none; border-radius:50%; background:transparent; color:var(--pdf-fg); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
+.pdf-ic:active { background:rgba(0,0,0,.08); }
+.pdf-meta { display:flex; align-items:center; gap:14px; font-size:.8rem; font-weight:700; color:var(--pdf-fg); }
+.pdf-timer { opacity:.65; display:flex; align-items:center; gap:4px; font-size:.75rem; }
+.pdf-stage { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:10px; -webkit-overflow-scrolling:touch; }
+#pdf-canvas { max-width:100%; height:auto; box-shadow:0 2px 18px rgba(0,0,0,.14); border-radius:6px; }
+
 /* TASKS */
 .task-card { background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:var(--radius); padding:10px 12px; display:flex; align-items:flex-start; gap:10px; box-shadow:var(--shadow-item); }
 .task-card.done { opacity:.62; }
@@ -756,6 +818,7 @@ body {
       <div class="d-item" id="nav-calendar" onclick="navTo('calendar')"><i class="fas fa-calendar-days d-icon"></i> Calendário</div>
       <div class="d-item" id="nav-grades" onclick="navTo('grades')"><i class="fas fa-square-root-variable d-icon"></i> Notas</div>
       <div class="d-item" id="nav-tasks" onclick="navTo('tasks')"><i class="fas fa-list-check d-icon"></i> Tarefas</div>
+      <div class="d-item" id="nav-reader" onclick="navTo('reader')"><i class="fas fa-book-open-reader d-icon"></i> Leitura &amp; Tarefas</div>
       <div class="d-item" onclick="askClearData()"><i class="fas fa-trash d-icon"></i> Limpar Dados</div>
       <div class="d-divider"></div>
       <div class="d-section">Sessão</div>
@@ -800,6 +863,11 @@ body {
     <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
     <div class="header-title">Tarefas &amp; Trabalhos</div>
     <button class="header-icon-btn" onclick="openTaskModal()"><i class="fas fa-plus"></i></button>
+  </div>
+  <div class="header" id="header-reader" style="display:none;">
+    <button class="header-icon-btn" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i></button>
+    <div class="header-title">Leitura &amp; Tarefas</div>
+    <button class="header-icon-btn" onclick="readerPrimaryAction()"><i class="fas fa-plus"></i></button>
   </div>
 
   <!-- <div class="status-bar" id="status-bar">
@@ -959,8 +1027,119 @@ body {
       </div>
     </div>
 
+    <!-- ══ LEITURA & TAREFAS (PDF + AGENDADOR) ══ -->
+    <div class="screen" id="screen-reader">
+      <!-- Alternador de abas simples: Materiais / Cronograma -->
+      <div class="rd-tabs">
+        <button class="rd-tab active" id="rd-tab-docs"  onclick="readerTab('docs')"><i class="fas fa-file-pdf"></i> Materiais</button>
+        <button class="rd-tab"        id="rd-tab-sched" onclick="readerTab('sched')"><i class="fas fa-calendar-check"></i> Cronograma</button>
+      </div>
+
+      <!-- ── Aba: Materiais (PDFs) ── -->
+      <div id="rd-pane-docs" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="rd-search" id="rd-search-wrap" style="display:none;">
+          <i class="fas fa-magnifying-glass"></i>
+          <input id="rd-search" placeholder="Buscar por título ou disciplina" oninput="renderPdfList()" />
+        </div>
+        <div id="rd-docs-empty" class="empty-state clickable-empty" style="display:none;" onclick="pickPdfFile()">
+          <div class="empty-ic"><i class="fas fa-file-arrow-up"></i></div>
+          <div class="empty-title">Clique aqui para adicionar um PDF</div>
+          <div class="empty-desc">Guarde os seus livros e sebentas aqui. O app lembra a última página lida por você.</div>
+        </div>
+        <div id="rd-docs-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+        <button class="btn-save" id="rd-docs-add" style="display:none;" onclick="pickPdfFile()">
+          <i class="fas fa-plus"></i> Adicionar PDF
+        </button>
+        <input type="file" id="rd-file-input" accept="application/pdf" style="display:none;" />
+      </div>
+
+      <!-- ── Aba: Cronograma ── -->
+      <div id="rd-pane-sched" style="display:none;flex-direction:column;gap:10px;">
+        <div id="rd-sched-empty" class="empty-state clickable-empty" style="display:none;" onclick="openScheduleModal()">
+          <div class="empty-ic"><i class="fas fa-clock"></i></div>
+          <div class="empty-title">Clique aqui para agendar</div>
+          <div class="empty-desc">Escolha um horário para ler ou fazer o TPC. Avisamos você 15 minutos antes.</div>
+        </div>
+        <div id="rd-sched-content" style="display:none;flex-direction:column;gap:10px;">
+          <div id="rd-sched-summary" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+          <div id="rd-sched-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+          <button class="btn-save" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Novo agendamento</button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /screen-wrapper -->
 </div><!-- /phone -->
+
+<!-- ══ LEITOR DE PDF (tela cheia, sem distrações) ══ -->
+<div class="pdf-reader" id="pdf-reader" data-theme="light">
+  <div class="pdf-progress"><div class="pdf-progress-bar" id="pdf-progress-bar"></div></div>
+  <div class="pdf-topbar">
+    <button class="pdf-ic" onclick="closePdfReader()" aria-label="Fechar"><i class="fas fa-arrow-left"></i></button>
+    <div class="pdf-title" id="pdf-title">Documento</div>
+    <button class="pdf-ic" id="pdf-bookmark-btn" onclick="togglePdfBookmark()" aria-label="Marcador"><i class="far fa-bookmark"></i></button>
+    <button class="pdf-ic" onclick="cyclePdfTheme()" aria-label="Tema"><i class="fas fa-circle-half-stroke"></i></button>
+  </div>
+  <div class="pdf-stage" id="pdf-stage"><canvas id="pdf-canvas"></canvas></div>
+  <div class="pdf-bottombar">
+    <button class="pdf-ic" onclick="pdfGo(-1)" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+    <div class="pdf-meta">
+      <span id="pdf-page-label">1 / 1</span>
+      <span class="pdf-timer"><i class="fas fa-stopwatch"></i> <span id="pdf-timer">00:00</span></span>
+    </div>
+    <button class="pdf-ic" onclick="pdfGo(1)" aria-label="Próxima"><i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
+
+<!-- ══ MODAL DE AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-schedule">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-calendar-plus"></i> <span id="sched-modal-title">Novo agendamento</span><button class="modal-close" onclick="closeScheduleModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <div class="rd-seg">
+        <button class="rd-seg-btn active" id="sched-type-reading"  onclick="setScheduleType('reading')"><i class="fas fa-book-open"></i> Leitura</button>
+        <button class="rd-seg-btn"        id="sched-type-homework" onclick="setScheduleType('homework')"><i class="fas fa-pen-to-square"></i> Tarefa</button>
+      </div>
+      <label class="form-label"><i class="fas fa-pen"></i> Título</label>
+      <input class="form-input" id="sched-title" maxlength="80" placeholder="Ex: Ler capítulo 4" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-calendar"></i> Data</label>
+          <input class="form-input" id="sched-date" type="date" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-clock"></i> Início</label>
+          <input class="form-input" id="sched-time" type="time" />
+        </div>
+      </div>
+      <label class="form-label"><i class="fas fa-hourglass-half"></i> Duração</label>
+      <select class="form-select" id="sched-duration">
+        <option value="15">15 minutos</option>
+        <option value="30">30 minutos</option>
+        <option value="45" selected>45 minutos</option>
+        <option value="60">1 hora</option>
+        <option value="90">1h 30min</option>
+        <option value="120">2 horas</option>
+      </select>
+      <label class="form-label"><i class="fas fa-file-pdf"></i> Material (opcional)</label>
+      <select class="form-select" id="sched-pdf" onchange="onSchedPdfChange()"><option value="">— Nenhum —</option></select>
+      <div id="sched-pages" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;">Da página</label>
+          <input class="form-input" id="sched-page-start" type="number" min="1" placeholder="1" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;">Até a página</label>
+          <input class="form-input" id="sched-page-end" type="number" min="1" placeholder="10" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeScheduleModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitScheduleModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ALERT MODAL -->
 <div class="modal-overlay" id="modal-alert">
@@ -1626,6 +1805,8 @@ function checkAlertsTick() {
   });
   // Limpa marcações antigas (>2h passadas)
   if (alertedOccurrences.size > 200) alertedOccurrences.clear();
+  // Lembretes de leituras/TPC agendados (15 min antes)
+  if (typeof checkStudyReminders === 'function') { try { checkStudyReminders(); } catch {} }
 }
 
 function inAppAlert(si, sessi) {
@@ -1792,7 +1973,7 @@ function showScreen(id) {
   if (leavingForm && id !== 'form') resetSubjectForm();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  ['home','form','progress','calendar','grades','tasks'].forEach(k=>{
+  ['home','form','progress','calendar','grades','tasks','reader'].forEach(k=>{
     const h=document.getElementById('header-'+k); if(h) h.style.display=(id===k?'flex':'none');
   });
   document.querySelectorAll('.d-item').forEach(el=>el.classList.remove('active'));
@@ -1801,6 +1982,7 @@ function showScreen(id) {
   if(id==='calendar') renderCalendar();
   if(id==='grades')   renderGrades();
   if(id==='tasks')    renderTasks();
+  if(id==='reader' && typeof renderReader === 'function') renderReader();
 }
 
 function resetSubjectForm() {
@@ -3292,6 +3474,435 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
 
   localStorage.setItem(FLAG, '1');
 })();
+</script>
+
+<!-- ══════════════════════════════════════════
+     LEITURA & TAREFAS — Leitor de PDF + Agendador
+     Local-first (localStorage + IndexedDB para os ficheiros)
+     com sincronização best-effort na nuvem (pdf_documents / study_schedules).
+═══════════════════════════════════════════ -->
+<script type="module">
+const PDF_LIB   = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs';
+const PDF_WORKER= 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs';
+const K_DOCS  = 'ssp_v5_pdfs';
+const K_SCHED = 'ssp_v5_schedules';
+const BUCKET  = 'pdfs';
+const $ = (id) => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now() + Math.random().toString(16).slice(2));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ── Estado local ───────────────────────── */
+let docs  = load(K_DOCS);
+let scheds= load(K_SCHED);
+let tab   = 'docs';
+
+function load(k){ try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : []; } catch { return []; } }
+function saveDocs(){ localStorage.setItem(K_DOCS, JSON.stringify(docs)); }
+function saveScheds(){ localStorage.setItem(K_SCHED, JSON.stringify(scheds)); }
+
+/* ── IndexedDB: guarda os ficheiros PDF para leitura offline ── */
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('ssp_pdfs', 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('files')) r.result.createObjectStore('files'); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbPut(id, blob){ const db = await idb(); return new Promise((res,rej)=>{ const t=db.transaction('files','readwrite'); t.objectStore('files').put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function idbGet(id){ const db = await idb(); return new Promise((res)=>{ const t=db.transaction('files','readonly'); const q=t.objectStore('files').get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }
+async function idbDel(id){ const db = await idb(); return new Promise((res)=>{ const t=db.transaction('files','readwrite'); t.objectStore('files').delete(id); t.oncomplete=res; t.onerror=res; }); }
+
+/* ── Nuvem (opcional — só quando há sessão) ── */
+async function sbc(){ return window.__ssp_sb || null; }
+async function currentUser(){
+  const sb = await sbc(); if (!sb) return null;
+  try { const { data } = await sb.auth.getUser(); return data?.user || null; } catch { return null; }
+}
+async function cloudUpsertDoc(d){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from('pdf_documents').upsert({
+    id: d.id, user_id: u.id, title: d.title, subject: d.subject || null,
+    file_url: d.file_url || null, storage_path: d.storage_path || null,
+    total_pages: d.total_pages || null, last_page_read: d.last_page || 1,
+    bookmarks: d.bookmarks || [], reading_seconds: d.reading_seconds || 0,
+  });
+}
+async function cloudUpsertSched(s){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from('study_schedules').upsert({
+    id: s.id, user_id: u.id, pdf_id: s.pdf_id || null, type: s.type, title: s.title,
+    start_time: s.start_time, end_time: s.end_time,
+    start_page: s.start_page || null, target_page: s.target_page || null,
+    is_completed: !!s.is_completed,
+  });
+}
+async function cloudDelete(table, id){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from(table).delete().eq('id', id).eq('user_id', u.id);
+}
+async function cloudUploadFile(d, file){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  const path = `${u.id}/${d.id}.pdf`;
+  const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: 'application/pdf' });
+  if (!error) { d.storage_path = path; saveDocs(); await cloudUpsertDoc(d); }
+}
+async function cloudPull(){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  try {
+    const [{ data: dd }, { data: ss }] = await Promise.all([
+      sb.from('pdf_documents').select('*'),
+      sb.from('study_schedules').select('*'),
+    ]);
+    (dd || []).forEach(r => {
+      if (docs.some(x => x.id === r.id)) return;
+      docs.push({ id:r.id, title:r.title, subject:r.subject||'', total_pages:r.total_pages||0,
+        last_page:r.last_page_read||1, bookmarks:r.bookmarks||[], reading_seconds:r.reading_seconds||0,
+        storage_path:r.storage_path||null, created_at:r.created_at });
+    });
+    (ss || []).forEach(r => {
+      if (scheds.some(x => x.id === r.id)) return;
+      scheds.push({ id:r.id, pdf_id:r.pdf_id, type:r.type, title:r.title, start_time:r.start_time,
+        end_time:r.end_time, start_page:r.start_page, target_page:r.target_page, is_completed:r.is_completed });
+    });
+    saveDocs(); saveScheds();
+    if ($('screen-reader')?.classList.contains('active')) renderReader();
+  } catch {}
+}
+
+/* ── Render: navegação por abas ───────────── */
+function readerTab(t){
+  tab = t;
+  $('rd-tab-docs').classList.toggle('active', t === 'docs');
+  $('rd-tab-sched').classList.toggle('active', t === 'sched');
+  $('rd-pane-docs').style.display  = t === 'docs'  ? 'flex' : 'none';
+  $('rd-pane-sched').style.display = t === 'sched' ? 'flex' : 'none';
+  renderReader();
+}
+function readerPrimaryAction(){ tab === 'sched' ? openScheduleModal() : pickPdfFile(); }
+function renderReader(){ renderPdfList(); renderSchedules(); }
+
+/* ── Materiais (PDFs) ─────────────────────── */
+function renderPdfList(){
+  const list = $('rd-docs-list'); if (!list) return;
+  const has = docs.length > 0;
+  $('rd-docs-empty').style.display = has ? 'none' : 'block';
+  $('rd-docs-add').style.display   = has ? 'flex' : 'none';
+  $('rd-search-wrap').style.display= docs.length > 2 ? 'flex' : 'none';
+  const q = ($('rd-search')?.value || '').trim().toLowerCase();
+  const shown = docs.filter(d => !q || d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q));
+  list.innerHTML = shown.map(d => {
+    const pct = d.total_pages ? Math.min(100, Math.round((d.last_page / d.total_pages) * 100)) : 0;
+    const mins = Math.round((d.reading_seconds || 0) / 60);
+    return `<div class="rd-card" onclick="openPdf('${d.id}')">
+      <div class="rd-card-ic"><i class="fas fa-file-pdf"></i></div>
+      <div class="rd-card-body">
+        <div class="rd-card-title">${esc(d.title)}</div>
+        <div class="rd-card-sub">${d.subject ? esc(d.subject) + ' · ' : ''}${d.total_pages ? `pág. ${d.last_page}/${d.total_pages} · ${pct}%` : 'não aberto'}${mins ? ` · ${mins} min` : ''}</div>
+        <div class="rd-bar"><div style="width:${pct}%"></div></div>
+      </div>
+      <div class="rd-card-actions">
+        <button class="rd-mini del" onclick="event.stopPropagation();removePdf('${d.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('') || (docs.length ? `<div class="empty-state">Nenhum material encontrado.</div>` : '');
+}
+
+function pickPdfFile(){
+  const inp = $('rd-file-input');
+  inp.value = '';
+  inp.onchange = async () => {
+    const file = inp.files?.[0]; if (!file) return;
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { showToast('Selecione um ficheiro PDF.'); return; }
+    const d = {
+      id: uid(), title: file.name.replace(/\.pdf$/i, ''), subject: '',
+      total_pages: 0, last_page: 1, bookmarks: [], reading_seconds: 0,
+      created_at: new Date().toISOString(),
+    };
+    try { await idbPut(d.id, file); } catch { showToast('Não foi possível guardar o ficheiro.'); return; }
+    docs.unshift(d); saveDocs(); renderPdfList();
+    showToast('PDF adicionado!');
+    cloudUpsertDoc(d); cloudUploadFile(d, file);
+  };
+  inp.click();
+}
+
+async function removePdf(id){
+  const d = docs.find(x => x.id === id); if (!d) return;
+  docs = docs.filter(x => x.id !== id);
+  scheds = scheds.map(s => s.pdf_id === id ? { ...s, pdf_id: null } : s);
+  saveDocs(); saveScheds(); renderReader();
+  await idbDel(id);
+  cloudDelete('pdf_documents', id);
+  const sb = await sbc(); if (sb && d.storage_path) { try { await sb.storage.from(BUCKET).remove([d.storage_path]); } catch {} }
+  showToast('Material removido.');
+}
+
+/* ── Leitor de PDF ────────────────────────── */
+let pdfjs = null, pdfDoc = null, curDoc = null, curPage = 1, rendering = false;
+let timerInt = null, sessionSecs = 0;
+const THEMES = ['light', 'sepia', 'dark'];
+
+async function ensurePdfjs(){
+  if (pdfjs) return pdfjs;
+  pdfjs = await import(PDF_LIB);
+  pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+  return pdfjs;
+}
+
+async function openPdf(id, page){
+  const d = docs.find(x => x.id === id); if (!d) return;
+  curDoc = d;
+  $('pdf-title').textContent = d.title;
+  $('pdf-reader').classList.add('open');
+  $('pdf-page-label').textContent = '…';
+  try {
+    const lib = await ensurePdfjs();
+    let blob = await idbGet(id);
+    if (!blob) blob = await downloadFromCloud(d);
+    if (!blob) { showToast('Ficheiro não disponível offline.'); closePdfReader(); return; }
+    const buf = await blob.arrayBuffer();
+    pdfDoc = await lib.getDocument({ data: buf }).promise;
+    d.total_pages = pdfDoc.numPages; saveDocs();
+    curPage = Math.min(Math.max(page || d.last_page || 1, 1), pdfDoc.numPages);
+    await renderPage();
+    startTimer();
+  } catch (e) {
+    console.warn('[pdf]', e);
+    showToast('Não foi possível abrir o PDF.');
+    closePdfReader();
+  }
+}
+
+async function downloadFromCloud(d){
+  const sb = await sbc(); if (!sb || !d.storage_path) return null;
+  try {
+    const { data, error } = await sb.storage.from(BUCKET).download(d.storage_path);
+    if (error || !data) return null;
+    await idbPut(d.id, data);
+    return data;
+  } catch { return null; }
+}
+
+async function renderPage(){
+  if (!pdfDoc || rendering) return;
+  rendering = true;
+  try {
+    const page = await pdfDoc.getPage(curPage);
+    const canvas = $('pdf-canvas'), ctx = canvas.getContext('2d');
+    const avail = $('pdf-stage').clientWidth - 20;
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(3, Math.max(0.5, avail / base.width)) * (window.devicePixelRatio || 1);
+    const vp = page.getViewport({ scale });
+    canvas.width = vp.width; canvas.height = vp.height;
+    canvas.style.width = (vp.width / (window.devicePixelRatio || 1)) + 'px';
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    $('pdf-page-label').textContent = `${curPage} / ${pdfDoc.numPages}`;
+    $('pdf-progress-bar').style.width = Math.round((curPage / pdfDoc.numPages) * 100) + '%';
+    $('pdf-stage').scrollTop = 0;
+    updateBookmarkIcon();
+    if (curDoc) { curDoc.last_page = curPage; saveDocs(); }
+  } finally { rendering = false; }
+}
+
+function pdfGo(delta){
+  if (!pdfDoc) return;
+  const next = curPage + delta;
+  if (next < 1 || next > pdfDoc.numPages) return;
+  curPage = next; renderPage();
+}
+
+function updateBookmarkIcon(){
+  const on = !!curDoc?.bookmarks?.includes(curPage);
+  $('pdf-bookmark-btn').innerHTML = `<i class="${on ? 'fas' : 'far'} fa-bookmark"></i>`;
+}
+function togglePdfBookmark(){
+  if (!curDoc) return;
+  curDoc.bookmarks = curDoc.bookmarks || [];
+  const i = curDoc.bookmarks.indexOf(curPage);
+  if (i >= 0) { curDoc.bookmarks.splice(i, 1); showToast('Marcador removido.'); }
+  else { curDoc.bookmarks.push(curPage); showToast(`Página ${curPage} marcada!`); }
+  saveDocs(); updateBookmarkIcon();
+}
+function cyclePdfTheme(){
+  const el = $('pdf-reader');
+  const next = THEMES[(THEMES.indexOf(el.dataset.theme) + 1) % THEMES.length];
+  el.dataset.theme = next;
+  localStorage.setItem('ssp_v5_pdf_theme', next);
+  showToast({ light:'Modo claro', sepia:'Modo sépia', dark:'Modo escuro' }[next]);
+}
+function startTimer(){
+  sessionSecs = 0;
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    sessionSecs++;
+    const m = String(Math.floor(sessionSecs / 60)).padStart(2, '0');
+    const s = String(sessionSecs % 60).padStart(2, '0');
+    $('pdf-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+function closePdfReader(){
+  clearInterval(timerInt); timerInt = null;
+  if (curDoc) {
+    curDoc.reading_seconds = (curDoc.reading_seconds || 0) + sessionSecs;
+    curDoc.last_page = curPage; saveDocs(); cloudUpsertDoc(curDoc);
+  }
+  $('pdf-reader').classList.remove('open');
+  pdfDoc = null; curDoc = null; sessionSecs = 0;
+  $('pdf-timer').textContent = '00:00';
+  renderReader();
+}
+
+/* ── Agendador (leituras / TPC) ───────────── */
+let schedType = 'reading', editingSchedId = null;
+
+function fmtDay(dt){
+  const d = new Date(dt), today = new Date();
+  const same = (a,b) => a.toDateString() === b.toDateString();
+  const tmw = new Date(today.getTime() + 864e5);
+  if (same(d, today)) return 'Hoje';
+  if (same(d, tmw)) return 'Amanhã';
+  return d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'short' });
+}
+function fmtHour(dt){ return new Date(dt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+
+function renderSchedules(){
+  const list = $('rd-sched-list'); if (!list) return;
+  const has = scheds.length > 0;
+  $('rd-sched-empty').style.display   = has ? 'none' : 'block';
+  $('rd-sched-content').style.display = has ? 'flex' : 'none';
+  if (!has) return;
+
+  const done = scheds.filter(s => s.is_completed).length;
+  const upcoming = scheds.filter(s => !s.is_completed && new Date(s.start_time) >= new Date()).length;
+  $('rd-sched-summary').innerHTML = `
+    <div class="rd-stat"><div class="rd-stat-v">${upcoming}</div><div class="rd-stat-l">Por fazer</div></div>
+    <div class="rd-stat"><div class="rd-stat-v">${done}</div><div class="rd-stat-l">Concluídos</div></div>
+    <div class="rd-stat"><div class="rd-stat-v">${scheds.length ? Math.round((done / scheds.length) * 100) : 0}%</div><div class="rd-stat-l">Progresso</div></div>`;
+
+  const sorted = [...scheds].sort((a,b) => (a.is_completed - b.is_completed) || (new Date(a.start_time) - new Date(b.start_time)));
+  let lastDay = '';
+  list.innerHTML = sorted.map(s => {
+    const d = docs.find(x => x.id === s.pdf_id);
+    const day = fmtDay(s.start_time);
+    const header = (!s.is_completed && day !== lastDay) ? (lastDay = day, `<div class="rd-day-label">${esc(day)}</div>`) : '';
+    const pages = (s.start_page || s.target_page) ? ` · pág. ${s.start_page || '?'}–${s.target_page || '?'}` : '';
+    const mins = Math.max(0, Math.round((new Date(s.end_time) - new Date(s.start_time)) / 60000));
+    return `${header}<div class="rd-card" onclick="${d ? `openPdf('${d.id}', ${s.start_page || 0})` : `toggleSchedDone('${s.id}')`}">
+      <div class="rd-card-ic ${s.is_completed ? 'done' : ''}"><i class="fas ${s.is_completed ? 'fa-check' : (s.type === 'reading' ? 'fa-book-open' : 'fa-pen-to-square')}"></i></div>
+      <div class="rd-card-body">
+        <div class="rd-card-title ${s.is_completed ? 'done' : ''}">${esc(s.title)}</div>
+        <div class="rd-card-sub">${fmtHour(s.start_time)} · ${mins} min${d ? ' · ' + esc(d.title) : ''}${pages}</div>
+      </div>
+      <div class="rd-card-actions">
+        <button class="rd-mini ${s.is_completed ? 'ok' : ''}" onclick="event.stopPropagation();toggleSchedDone('${s.id}')"><i class="fas ${s.is_completed ? 'fa-rotate-left' : 'fa-circle-check'}"></i></button>
+        <button class="rd-mini del" onclick="event.stopPropagation();removeSched('${s.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openScheduleModal(){
+  editingSchedId = null;
+  setScheduleType('reading');
+  $('sched-title').value = '';
+  const n = new Date(Date.now() + 60 * 60000);
+  $('sched-date').value = n.toISOString().slice(0, 10);
+  $('sched-time').value = String(n.getHours()).padStart(2,'0') + ':00';
+  $('sched-duration').value = '45';
+  $('sched-page-start').value = ''; $('sched-page-end').value = '';
+  const sel = $('sched-pdf');
+  sel.innerHTML = '<option value="">— Nenhum —</option>' + docs.map(d => `<option value="${d.id}">${esc(d.title)}</option>`).join('');
+  onSchedPdfChange();
+  $('modal-schedule').classList.add('open');
+}
+function closeScheduleModal(){ $('modal-schedule').classList.remove('open'); }
+function setScheduleType(t){
+  schedType = t;
+  $('sched-type-reading').classList.toggle('active', t === 'reading');
+  $('sched-type-homework').classList.toggle('active', t === 'homework');
+  $('sched-title').placeholder = t === 'reading' ? 'Ex: Ler capítulo 4' : 'Ex: Resolver exercícios pág. 42';
+}
+function onSchedPdfChange(){
+  $('sched-pages').style.display = $('sched-pdf').value ? 'grid' : 'none';
+}
+async function submitScheduleModal(){
+  const title = $('sched-title').value.trim();
+  const date = $('sched-date').value, time = $('sched-time').value;
+  if (!title) { showToast('Escreva um título.'); return; }
+  if (!date || !time) { showToast('Escolha data e horário.'); return; }
+  const start = new Date(`${date}T${time}`);
+  if (isNaN(start)) { showToast('Data inválida.'); return; }
+  const dur = parseInt($('sched-duration').value, 10) || 45;
+  const pdfId = $('sched-pdf').value || null;
+  const s = {
+    id: editingSchedId || uid(), pdf_id: pdfId, type: schedType, title,
+    start_time: start.toISOString(), end_time: new Date(start.getTime() + dur * 60000).toISOString(),
+    start_page: pdfId ? (parseInt($('sched-page-start').value, 10) || null) : null,
+    target_page: pdfId ? (parseInt($('sched-page-end').value, 10) || null) : null,
+    is_completed: false,
+  };
+  scheds = scheds.filter(x => x.id !== s.id); scheds.push(s);
+  saveScheds();
+  closeScheduleModal();
+  readerTab('sched');
+  showToast('Agendado! Avisamos 15 min antes.');
+  cloudUpsertSched(s);
+}
+function toggleSchedDone(id){
+  const s = scheds.find(x => x.id === id); if (!s) return;
+  s.is_completed = !s.is_completed;
+  saveScheds(); renderSchedules();
+  if (s.is_completed) showToast('✓ Concluído. Bom trabalho!');
+  cloudUpsertSched(s);
+}
+function removeSched(id){
+  scheds = scheds.filter(x => x.id !== id);
+  saveScheds(); renderSchedules();
+  cloudDelete('study_schedules', id);
+  showToast('Agendamento removido.');
+}
+
+/* ── Lembretes: 15 min antes do horário agendado ── */
+const remindedSched = new Set();
+function checkStudyReminders(){
+  const now = Date.now();
+  scheds.forEach(s => {
+    if (s.is_completed || remindedSched.has(s.id)) return;
+    const diff = new Date(s.start_time).getTime() - now;
+    if (diff <= 15 * 60000 && diff > 0) {
+      remindedSched.add(s.id);
+      const label = s.type === 'reading' ? 'Leitura' : 'Tarefa';
+      try { playCurrentSound(); } catch {}
+      showToast(`<b>${label} em 15 min</b><br>${esc(s.title)}`);
+      if (window.Notification && Notification.permission === 'granted') {
+        try { new Notification('SmartSchoolPro', { body: `${label}: ${s.title} começa em 15 minutos.` }); } catch {}
+      }
+    }
+  });
+}
+
+/* ── Expor no escopo global (o HTML usa onclick) ── */
+Object.assign(window, {
+  readerTab, readerPrimaryAction, renderReader, renderPdfList, pickPdfFile, removePdf,
+  openPdf, closePdfReader, pdfGo, togglePdfBookmark, cyclePdfTheme,
+  openScheduleModal, closeScheduleModal, setScheduleType, onSchedPdfChange,
+  submitScheduleModal, toggleSchedDone, removeSched, checkStudyReminders,
+});
+
+/* ── Init ─────────────────────────────────── */
+const savedTheme = localStorage.getItem('ssp_v5_pdf_theme');
+if (savedTheme) $('pdf-reader').dataset.theme = savedTheme;
+window.addEventListener('resize', () => { if (pdfDoc) renderPage(); });
+document.addEventListener('keydown', (e) => {
+  if (!$('pdf-reader').classList.contains('open')) return;
+  if (e.key === 'ArrowRight') pdfGo(1);
+  if (e.key === 'ArrowLeft')  pdfGo(-1);
+  if (e.key === 'Escape')     closePdfReader();
+});
+renderReader();
+cloudPull();
+(async () => { const sb = await sbc(); sb?.auth.onAuthStateChange((e) => { if (e === 'SIGNED_IN') cloudPull(); }); })();
 </script>
 </body>
 </html>
