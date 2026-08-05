@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      pdf_documents: {
+        Row: {
+          bookmarks: Json
+          created_at: string
+          file_url: string
+          id: string
+          last_page_read: number
+          reading_seconds: number
+          storage_path: string | null
+          subject: string | null
+          title: string
+          total_pages: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bookmarks?: Json
+          created_at?: string
+          file_url: string
+          id?: string
+          last_page_read?: number
+          reading_seconds?: number
+          storage_path?: string | null
+          subject?: string | null
+          title: string
+          total_pages?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bookmarks?: Json
+          created_at?: string
+          file_url?: string
+          id?: string
+          last_page_read?: number
+          reading_seconds?: number
+          storage_path?: string | null
+          subject?: string | null
+          title?: string
+          total_pages?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_schedules: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          is_completed: boolean
+          pdf_id: string | null
+          start_page: number | null
+          start_time: string
+          target_page: number | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          is_completed?: boolean
+          pdf_id?: string | null
+          start_page?: number | null
+          start_time: string
+          target_page?: number | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          is_completed?: boolean
+          pdf_id?: string | null
+          start_page?: number | null
+          start_time?: string
+          target_page?: number | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_schedules_pdf_id_fkey"
+            columns: ["pdf_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_sync: {
         Row: {
           created_at: string
