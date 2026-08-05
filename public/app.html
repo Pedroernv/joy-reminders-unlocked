@@ -965,8 +965,119 @@ body {
       </div>
     </div>
 
+    <!-- ══ LEITURA & TAREFAS (PDF + AGENDADOR) ══ -->
+    <div class="screen" id="screen-reader">
+      <!-- Alternador de abas simples: Materiais / Cronograma -->
+      <div class="rd-tabs">
+        <button class="rd-tab active" id="rd-tab-docs"  onclick="readerTab('docs')"><i class="fas fa-file-pdf"></i> Materiais</button>
+        <button class="rd-tab"        id="rd-tab-sched" onclick="readerTab('sched')"><i class="fas fa-calendar-check"></i> Cronograma</button>
+      </div>
+
+      <!-- ── Aba: Materiais (PDFs) ── -->
+      <div id="rd-pane-docs" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="rd-search" id="rd-search-wrap" style="display:none;">
+          <i class="fas fa-magnifying-glass"></i>
+          <input id="rd-search" placeholder="Buscar por título ou disciplina" oninput="renderPdfList()" />
+        </div>
+        <div id="rd-docs-empty" class="empty-state clickable-empty" style="display:none;" onclick="pickPdfFile()">
+          <div class="empty-ic"><i class="fas fa-file-arrow-up"></i></div>
+          <div class="empty-title">Clique aqui para adicionar um PDF</div>
+          <div class="empty-desc">Guarde os seus livros e sebentas aqui. O app lembra a última página lida por você.</div>
+        </div>
+        <div id="rd-docs-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+        <button class="btn-save" id="rd-docs-add" style="display:none;" onclick="pickPdfFile()">
+          <i class="fas fa-plus"></i> Adicionar PDF
+        </button>
+        <input type="file" id="rd-file-input" accept="application/pdf" style="display:none;" />
+      </div>
+
+      <!-- ── Aba: Cronograma ── -->
+      <div id="rd-pane-sched" style="display:none;flex-direction:column;gap:10px;">
+        <div id="rd-sched-empty" class="empty-state clickable-empty" style="display:none;" onclick="openScheduleModal()">
+          <div class="empty-ic"><i class="fas fa-clock"></i></div>
+          <div class="empty-title">Clique aqui para agendar</div>
+          <div class="empty-desc">Escolha um horário para ler ou fazer o TPC. Avisamos você 15 minutos antes.</div>
+        </div>
+        <div id="rd-sched-content" style="display:none;flex-direction:column;gap:10px;">
+          <div id="rd-sched-summary" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+          <div id="rd-sched-list" style="display:flex;flex-direction:column;gap:9px;"></div>
+          <button class="btn-save" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Novo agendamento</button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /screen-wrapper -->
 </div><!-- /phone -->
+
+<!-- ══ LEITOR DE PDF (tela cheia, sem distrações) ══ -->
+<div class="pdf-reader" id="pdf-reader" data-theme="light">
+  <div class="pdf-progress"><div class="pdf-progress-bar" id="pdf-progress-bar"></div></div>
+  <div class="pdf-topbar">
+    <button class="pdf-ic" onclick="closePdfReader()" aria-label="Fechar"><i class="fas fa-arrow-left"></i></button>
+    <div class="pdf-title" id="pdf-title">Documento</div>
+    <button class="pdf-ic" id="pdf-bookmark-btn" onclick="togglePdfBookmark()" aria-label="Marcador"><i class="far fa-bookmark"></i></button>
+    <button class="pdf-ic" onclick="cyclePdfTheme()" aria-label="Tema"><i class="fas fa-circle-half-stroke"></i></button>
+  </div>
+  <div class="pdf-stage" id="pdf-stage"><canvas id="pdf-canvas"></canvas></div>
+  <div class="pdf-bottombar">
+    <button class="pdf-ic" onclick="pdfGo(-1)" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+    <div class="pdf-meta">
+      <span id="pdf-page-label">1 / 1</span>
+      <span class="pdf-timer"><i class="fas fa-stopwatch"></i> <span id="pdf-timer">00:00</span></span>
+    </div>
+    <button class="pdf-ic" onclick="pdfGo(1)" aria-label="Próxima"><i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
+
+<!-- ══ MODAL DE AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-schedule">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-calendar-plus"></i> <span id="sched-modal-title">Novo agendamento</span><button class="modal-close" onclick="closeScheduleModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <div class="rd-seg">
+        <button class="rd-seg-btn active" id="sched-type-reading"  onclick="setScheduleType('reading')"><i class="fas fa-book-open"></i> Leitura</button>
+        <button class="rd-seg-btn"        id="sched-type-homework" onclick="setScheduleType('homework')"><i class="fas fa-pen-to-square"></i> Tarefa</button>
+      </div>
+      <label class="form-label"><i class="fas fa-pen"></i> Título</label>
+      <input class="form-input" id="sched-title" maxlength="80" placeholder="Ex: Ler capítulo 4" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-calendar"></i> Data</label>
+          <input class="form-input" id="sched-date" type="date" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;"><i class="fas fa-clock"></i> Início</label>
+          <input class="form-input" id="sched-time" type="time" />
+        </div>
+      </div>
+      <label class="form-label"><i class="fas fa-hourglass-half"></i> Duração</label>
+      <select class="form-select" id="sched-duration">
+        <option value="15">15 minutos</option>
+        <option value="30">30 minutos</option>
+        <option value="45" selected>45 minutos</option>
+        <option value="60">1 hora</option>
+        <option value="90">1h 30min</option>
+        <option value="120">2 horas</option>
+      </select>
+      <label class="form-label"><i class="fas fa-file-pdf"></i> Material (opcional)</label>
+      <select class="form-select" id="sched-pdf" onchange="onSchedPdfChange()"><option value="">— Nenhum —</option></select>
+      <div id="sched-pages" style="display:none;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="form-label" style="font-size:.78rem;">Da página</label>
+          <input class="form-input" id="sched-page-start" type="number" min="1" placeholder="1" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.78rem;">Até a página</label>
+          <input class="form-input" id="sched-page-end" type="number" min="1" placeholder="10" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-snooze" onclick="closeScheduleModal()"><i class="fas fa-xmark"></i> Cancelar</button>
+      <button class="btn-ok" onclick="submitScheduleModal()"><i class="fas fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ALERT MODAL -->
 <div class="modal-overlay" id="modal-alert">
