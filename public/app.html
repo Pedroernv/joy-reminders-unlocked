@@ -3475,5 +3475,434 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   localStorage.setItem(FLAG, '1');
 })();
 </script>
+
+<!-- ══════════════════════════════════════════
+     LEITURA & TAREFAS — Leitor de PDF + Agendador
+     Local-first (localStorage + IndexedDB para os ficheiros)
+     com sincronização best-effort na nuvem (pdf_documents / study_schedules).
+═══════════════════════════════════════════ -->
+<script type="module">
+const PDF_LIB   = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs';
+const PDF_WORKER= 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs';
+const K_DOCS  = 'ssp_v5_pdfs';
+const K_SCHED = 'ssp_v5_schedules';
+const BUCKET  = 'pdfs';
+const $ = (id) => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now() + Math.random().toString(16).slice(2));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ── Estado local ───────────────────────── */
+let docs  = load(K_DOCS);
+let scheds= load(K_SCHED);
+let tab   = 'docs';
+
+function load(k){ try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : []; } catch { return []; } }
+function saveDocs(){ localStorage.setItem(K_DOCS, JSON.stringify(docs)); }
+function saveScheds(){ localStorage.setItem(K_SCHED, JSON.stringify(scheds)); }
+
+/* ── IndexedDB: guarda os ficheiros PDF para leitura offline ── */
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('ssp_pdfs', 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('files')) r.result.createObjectStore('files'); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbPut(id, blob){ const db = await idb(); return new Promise((res,rej)=>{ const t=db.transaction('files','readwrite'); t.objectStore('files').put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function idbGet(id){ const db = await idb(); return new Promise((res)=>{ const t=db.transaction('files','readonly'); const q=t.objectStore('files').get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }
+async function idbDel(id){ const db = await idb(); return new Promise((res)=>{ const t=db.transaction('files','readwrite'); t.objectStore('files').delete(id); t.oncomplete=res; t.onerror=res; }); }
+
+/* ── Nuvem (opcional — só quando há sessão) ── */
+async function sbc(){ return window.__ssp_sb || null; }
+async function currentUser(){
+  const sb = await sbc(); if (!sb) return null;
+  try { const { data } = await sb.auth.getUser(); return data?.user || null; } catch { return null; }
+}
+async function cloudUpsertDoc(d){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from('pdf_documents').upsert({
+    id: d.id, user_id: u.id, title: d.title, subject: d.subject || null,
+    file_url: d.file_url || null, storage_path: d.storage_path || null,
+    total_pages: d.total_pages || null, last_page_read: d.last_page || 1,
+    bookmarks: d.bookmarks || [], reading_seconds: d.reading_seconds || 0,
+  });
+}
+async function cloudUpsertSched(s){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from('study_schedules').upsert({
+    id: s.id, user_id: u.id, pdf_id: s.pdf_id || null, type: s.type, title: s.title,
+    start_time: s.start_time, end_time: s.end_time,
+    start_page: s.start_page || null, target_page: s.target_page || null,
+    is_completed: !!s.is_completed,
+  });
+}
+async function cloudDelete(table, id){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  await sb.from(table).delete().eq('id', id).eq('user_id', u.id);
+}
+async function cloudUploadFile(d, file){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  const path = `${u.id}/${d.id}.pdf`;
+  const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: 'application/pdf' });
+  if (!error) { d.storage_path = path; saveDocs(); await cloudUpsertDoc(d); }
+}
+async function cloudPull(){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  try {
+    const [{ data: dd }, { data: ss }] = await Promise.all([
+      sb.from('pdf_documents').select('*'),
+      sb.from('study_schedules').select('*'),
+    ]);
+    (dd || []).forEach(r => {
+      if (docs.some(x => x.id === r.id)) return;
+      docs.push({ id:r.id, title:r.title, subject:r.subject||'', total_pages:r.total_pages||0,
+        last_page:r.last_page_read||1, bookmarks:r.bookmarks||[], reading_seconds:r.reading_seconds||0,
+        storage_path:r.storage_path||null, created_at:r.created_at });
+    });
+    (ss || []).forEach(r => {
+      if (scheds.some(x => x.id === r.id)) return;
+      scheds.push({ id:r.id, pdf_id:r.pdf_id, type:r.type, title:r.title, start_time:r.start_time,
+        end_time:r.end_time, start_page:r.start_page, target_page:r.target_page, is_completed:r.is_completed });
+    });
+    saveDocs(); saveScheds();
+    if ($('screen-reader')?.classList.contains('active')) renderReader();
+  } catch {}
+}
+
+/* ── Render: navegação por abas ───────────── */
+function readerTab(t){
+  tab = t;
+  $('rd-tab-docs').classList.toggle('active', t === 'docs');
+  $('rd-tab-sched').classList.toggle('active', t === 'sched');
+  $('rd-pane-docs').style.display  = t === 'docs'  ? 'flex' : 'none';
+  $('rd-pane-sched').style.display = t === 'sched' ? 'flex' : 'none';
+  renderReader();
+}
+function readerPrimaryAction(){ tab === 'sched' ? openScheduleModal() : pickPdfFile(); }
+function renderReader(){ renderPdfList(); renderSchedules(); }
+
+/* ── Materiais (PDFs) ─────────────────────── */
+function renderPdfList(){
+  const list = $('rd-docs-list'); if (!list) return;
+  const has = docs.length > 0;
+  $('rd-docs-empty').style.display = has ? 'none' : 'block';
+  $('rd-docs-add').style.display   = has ? 'flex' : 'none';
+  $('rd-search-wrap').style.display= docs.length > 2 ? 'flex' : 'none';
+  const q = ($('rd-search')?.value || '').trim().toLowerCase();
+  const shown = docs.filter(d => !q || d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q));
+  list.innerHTML = shown.map(d => {
+    const pct = d.total_pages ? Math.min(100, Math.round((d.last_page / d.total_pages) * 100)) : 0;
+    const mins = Math.round((d.reading_seconds || 0) / 60);
+    return `<div class="rd-card" onclick="openPdf('${d.id}')">
+      <div class="rd-card-ic"><i class="fas fa-file-pdf"></i></div>
+      <div class="rd-card-body">
+        <div class="rd-card-title">${esc(d.title)}</div>
+        <div class="rd-card-sub">${d.subject ? esc(d.subject) + ' · ' : ''}${d.total_pages ? `pág. ${d.last_page}/${d.total_pages} · ${pct}%` : 'não aberto'}${mins ? ` · ${mins} min` : ''}</div>
+        <div class="rd-bar"><div style="width:${pct}%"></div></div>
+      </div>
+      <div class="rd-card-actions">
+        <button class="rd-mini del" onclick="event.stopPropagation();removePdf('${d.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('') || (docs.length ? `<div class="empty-state">Nenhum material encontrado.</div>` : '');
+}
+
+function pickPdfFile(){
+  const inp = $('rd-file-input');
+  inp.value = '';
+  inp.onchange = async () => {
+    const file = inp.files?.[0]; if (!file) return;
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { showToast('Selecione um ficheiro PDF.'); return; }
+    const d = {
+      id: uid(), title: file.name.replace(/\.pdf$/i, ''), subject: '',
+      total_pages: 0, last_page: 1, bookmarks: [], reading_seconds: 0,
+      created_at: new Date().toISOString(),
+    };
+    try { await idbPut(d.id, file); } catch { showToast('Não foi possível guardar o ficheiro.'); return; }
+    docs.unshift(d); saveDocs(); renderPdfList();
+    showToast('PDF adicionado!');
+    cloudUpsertDoc(d); cloudUploadFile(d, file);
+  };
+  inp.click();
+}
+
+async function removePdf(id){
+  const d = docs.find(x => x.id === id); if (!d) return;
+  docs = docs.filter(x => x.id !== id);
+  scheds = scheds.map(s => s.pdf_id === id ? { ...s, pdf_id: null } : s);
+  saveDocs(); saveScheds(); renderReader();
+  await idbDel(id);
+  cloudDelete('pdf_documents', id);
+  const sb = await sbc(); if (sb && d.storage_path) { try { await sb.storage.from(BUCKET).remove([d.storage_path]); } catch {} }
+  showToast('Material removido.');
+}
+
+/* ── Leitor de PDF ────────────────────────── */
+let pdfjs = null, pdfDoc = null, curDoc = null, curPage = 1, rendering = false;
+let timerInt = null, sessionSecs = 0;
+const THEMES = ['light', 'sepia', 'dark'];
+
+async function ensurePdfjs(){
+  if (pdfjs) return pdfjs;
+  pdfjs = await import(PDF_LIB);
+  pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+  return pdfjs;
+}
+
+async function openPdf(id, page){
+  const d = docs.find(x => x.id === id); if (!d) return;
+  curDoc = d;
+  $('pdf-title').textContent = d.title;
+  $('pdf-reader').classList.add('open');
+  $('pdf-page-label').textContent = '…';
+  try {
+    const lib = await ensurePdfjs();
+    let blob = await idbGet(id);
+    if (!blob) blob = await downloadFromCloud(d);
+    if (!blob) { showToast('Ficheiro não disponível offline.'); closePdfReader(); return; }
+    const buf = await blob.arrayBuffer();
+    pdfDoc = await lib.getDocument({ data: buf }).promise;
+    d.total_pages = pdfDoc.numPages; saveDocs();
+    curPage = Math.min(Math.max(page || d.last_page || 1, 1), pdfDoc.numPages);
+    await renderPage();
+    startTimer();
+  } catch (e) {
+    console.warn('[pdf]', e);
+    showToast('Não foi possível abrir o PDF.');
+    closePdfReader();
+  }
+}
+
+async function downloadFromCloud(d){
+  const sb = await sbc(); if (!sb || !d.storage_path) return null;
+  try {
+    const { data, error } = await sb.storage.from(BUCKET).download(d.storage_path);
+    if (error || !data) return null;
+    await idbPut(d.id, data);
+    return data;
+  } catch { return null; }
+}
+
+async function renderPage(){
+  if (!pdfDoc || rendering) return;
+  rendering = true;
+  try {
+    const page = await pdfDoc.getPage(curPage);
+    const canvas = $('pdf-canvas'), ctx = canvas.getContext('2d');
+    const avail = $('pdf-stage').clientWidth - 20;
+    const base = page.getViewport({ scale: 1 });
+    const scale = Math.min(3, Math.max(0.5, avail / base.width)) * (window.devicePixelRatio || 1);
+    const vp = page.getViewport({ scale });
+    canvas.width = vp.width; canvas.height = vp.height;
+    canvas.style.width = (vp.width / (window.devicePixelRatio || 1)) + 'px';
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    $('pdf-page-label').textContent = `${curPage} / ${pdfDoc.numPages}`;
+    $('pdf-progress-bar').style.width = Math.round((curPage / pdfDoc.numPages) * 100) + '%';
+    $('pdf-stage').scrollTop = 0;
+    updateBookmarkIcon();
+    if (curDoc) { curDoc.last_page = curPage; saveDocs(); }
+  } finally { rendering = false; }
+}
+
+function pdfGo(delta){
+  if (!pdfDoc) return;
+  const next = curPage + delta;
+  if (next < 1 || next > pdfDoc.numPages) return;
+  curPage = next; renderPage();
+}
+
+function updateBookmarkIcon(){
+  const on = !!curDoc?.bookmarks?.includes(curPage);
+  $('pdf-bookmark-btn').innerHTML = `<i class="${on ? 'fas' : 'far'} fa-bookmark"></i>`;
+}
+function togglePdfBookmark(){
+  if (!curDoc) return;
+  curDoc.bookmarks = curDoc.bookmarks || [];
+  const i = curDoc.bookmarks.indexOf(curPage);
+  if (i >= 0) { curDoc.bookmarks.splice(i, 1); showToast('Marcador removido.'); }
+  else { curDoc.bookmarks.push(curPage); showToast(`Página ${curPage} marcada!`); }
+  saveDocs(); updateBookmarkIcon();
+}
+function cyclePdfTheme(){
+  const el = $('pdf-reader');
+  const next = THEMES[(THEMES.indexOf(el.dataset.theme) + 1) % THEMES.length];
+  el.dataset.theme = next;
+  localStorage.setItem('ssp_v5_pdf_theme', next);
+  showToast({ light:'Modo claro', sepia:'Modo sépia', dark:'Modo escuro' }[next]);
+}
+function startTimer(){
+  sessionSecs = 0;
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    sessionSecs++;
+    const m = String(Math.floor(sessionSecs / 60)).padStart(2, '0');
+    const s = String(sessionSecs % 60).padStart(2, '0');
+    $('pdf-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+function closePdfReader(){
+  clearInterval(timerInt); timerInt = null;
+  if (curDoc) {
+    curDoc.reading_seconds = (curDoc.reading_seconds || 0) + sessionSecs;
+    curDoc.last_page = curPage; saveDocs(); cloudUpsertDoc(curDoc);
+  }
+  $('pdf-reader').classList.remove('open');
+  pdfDoc = null; curDoc = null; sessionSecs = 0;
+  $('pdf-timer').textContent = '00:00';
+  renderReader();
+}
+
+/* ── Agendador (leituras / TPC) ───────────── */
+let schedType = 'reading', editingSchedId = null;
+
+function fmtDay(dt){
+  const d = new Date(dt), today = new Date();
+  const same = (a,b) => a.toDateString() === b.toDateString();
+  const tmw = new Date(today.getTime() + 864e5);
+  if (same(d, today)) return 'Hoje';
+  if (same(d, tmw)) return 'Amanhã';
+  return d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'short' });
+}
+function fmtHour(dt){ return new Date(dt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+
+function renderSchedules(){
+  const list = $('rd-sched-list'); if (!list) return;
+  const has = scheds.length > 0;
+  $('rd-sched-empty').style.display   = has ? 'none' : 'block';
+  $('rd-sched-content').style.display = has ? 'flex' : 'none';
+  if (!has) return;
+
+  const done = scheds.filter(s => s.is_completed).length;
+  const upcoming = scheds.filter(s => !s.is_completed && new Date(s.start_time) >= new Date()).length;
+  $('rd-sched-summary').innerHTML = `
+    <div class="rd-stat"><div class="rd-stat-v">${upcoming}</div><div class="rd-stat-l">Por fazer</div></div>
+    <div class="rd-stat"><div class="rd-stat-v">${done}</div><div class="rd-stat-l">Concluídos</div></div>
+    <div class="rd-stat"><div class="rd-stat-v">${scheds.length ? Math.round((done / scheds.length) * 100) : 0}%</div><div class="rd-stat-l">Progresso</div></div>`;
+
+  const sorted = [...scheds].sort((a,b) => (a.is_completed - b.is_completed) || (new Date(a.start_time) - new Date(b.start_time)));
+  let lastDay = '';
+  list.innerHTML = sorted.map(s => {
+    const d = docs.find(x => x.id === s.pdf_id);
+    const day = fmtDay(s.start_time);
+    const header = (!s.is_completed && day !== lastDay) ? (lastDay = day, `<div class="rd-day-label">${esc(day)}</div>`) : '';
+    const pages = (s.start_page || s.target_page) ? ` · pág. ${s.start_page || '?'}–${s.target_page || '?'}` : '';
+    const mins = Math.max(0, Math.round((new Date(s.end_time) - new Date(s.start_time)) / 60000));
+    return `${header}<div class="rd-card" onclick="${d ? `openPdf('${d.id}', ${s.start_page || 0})` : `toggleSchedDone('${s.id}')`}">
+      <div class="rd-card-ic ${s.is_completed ? 'done' : ''}"><i class="fas ${s.is_completed ? 'fa-check' : (s.type === 'reading' ? 'fa-book-open' : 'fa-pen-to-square')}"></i></div>
+      <div class="rd-card-body">
+        <div class="rd-card-title ${s.is_completed ? 'done' : ''}">${esc(s.title)}</div>
+        <div class="rd-card-sub">${fmtHour(s.start_time)} · ${mins} min${d ? ' · ' + esc(d.title) : ''}${pages}</div>
+      </div>
+      <div class="rd-card-actions">
+        <button class="rd-mini ${s.is_completed ? 'ok' : ''}" onclick="event.stopPropagation();toggleSchedDone('${s.id}')"><i class="fas ${s.is_completed ? 'fa-rotate-left' : 'fa-circle-check'}"></i></button>
+        <button class="rd-mini del" onclick="event.stopPropagation();removeSched('${s.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openScheduleModal(){
+  editingSchedId = null;
+  setScheduleType('reading');
+  $('sched-title').value = '';
+  const n = new Date(Date.now() + 60 * 60000);
+  $('sched-date').value = n.toISOString().slice(0, 10);
+  $('sched-time').value = String(n.getHours()).padStart(2,'0') + ':00';
+  $('sched-duration').value = '45';
+  $('sched-page-start').value = ''; $('sched-page-end').value = '';
+  const sel = $('sched-pdf');
+  sel.innerHTML = '<option value="">— Nenhum —</option>' + docs.map(d => `<option value="${d.id}">${esc(d.title)}</option>`).join('');
+  onSchedPdfChange();
+  $('modal-schedule').classList.add('open');
+}
+function closeScheduleModal(){ $('modal-schedule').classList.remove('open'); }
+function setScheduleType(t){
+  schedType = t;
+  $('sched-type-reading').classList.toggle('active', t === 'reading');
+  $('sched-type-homework').classList.toggle('active', t === 'homework');
+  $('sched-title').placeholder = t === 'reading' ? 'Ex: Ler capítulo 4' : 'Ex: Resolver exercícios pág. 42';
+}
+function onSchedPdfChange(){
+  $('sched-pages').style.display = $('sched-pdf').value ? 'grid' : 'none';
+}
+async function submitScheduleModal(){
+  const title = $('sched-title').value.trim();
+  const date = $('sched-date').value, time = $('sched-time').value;
+  if (!title) { showToast('Escreva um título.'); return; }
+  if (!date || !time) { showToast('Escolha data e horário.'); return; }
+  const start = new Date(`${date}T${time}`);
+  if (isNaN(start)) { showToast('Data inválida.'); return; }
+  const dur = parseInt($('sched-duration').value, 10) || 45;
+  const pdfId = $('sched-pdf').value || null;
+  const s = {
+    id: editingSchedId || uid(), pdf_id: pdfId, type: schedType, title,
+    start_time: start.toISOString(), end_time: new Date(start.getTime() + dur * 60000).toISOString(),
+    start_page: pdfId ? (parseInt($('sched-page-start').value, 10) || null) : null,
+    target_page: pdfId ? (parseInt($('sched-page-end').value, 10) || null) : null,
+    is_completed: false,
+  };
+  scheds = scheds.filter(x => x.id !== s.id); scheds.push(s);
+  saveScheds();
+  closeScheduleModal();
+  readerTab('sched');
+  showToast('Agendado! Avisamos 15 min antes.');
+  cloudUpsertSched(s);
+}
+function toggleSchedDone(id){
+  const s = scheds.find(x => x.id === id); if (!s) return;
+  s.is_completed = !s.is_completed;
+  saveScheds(); renderSchedules();
+  if (s.is_completed) showToast('✓ Concluído. Bom trabalho!');
+  cloudUpsertSched(s);
+}
+function removeSched(id){
+  scheds = scheds.filter(x => x.id !== id);
+  saveScheds(); renderSchedules();
+  cloudDelete('study_schedules', id);
+  showToast('Agendamento removido.');
+}
+
+/* ── Lembretes: 15 min antes do horário agendado ── */
+const remindedSched = new Set();
+function checkStudyReminders(){
+  const now = Date.now();
+  scheds.forEach(s => {
+    if (s.is_completed || remindedSched.has(s.id)) return;
+    const diff = new Date(s.start_time).getTime() - now;
+    if (diff <= 15 * 60000 && diff > 0) {
+      remindedSched.add(s.id);
+      const label = s.type === 'reading' ? 'Leitura' : 'Tarefa';
+      try { playCurrentSound(); } catch {}
+      showToast(`<b>${label} em 15 min</b><br>${esc(s.title)}`);
+      if (window.Notification && Notification.permission === 'granted') {
+        try { new Notification('SmartSchoolPro', { body: `${label}: ${s.title} começa em 15 minutos.` }); } catch {}
+      }
+    }
+  });
+}
+
+/* ── Expor no escopo global (o HTML usa onclick) ── */
+Object.assign(window, {
+  readerTab, readerPrimaryAction, renderReader, renderPdfList, pickPdfFile, removePdf,
+  openPdf, closePdfReader, pdfGo, togglePdfBookmark, cyclePdfTheme,
+  openScheduleModal, closeScheduleModal, setScheduleType, onSchedPdfChange,
+  submitScheduleModal, toggleSchedDone, removeSched, checkStudyReminders,
+});
+
+/* ── Init ─────────────────────────────────── */
+const savedTheme = localStorage.getItem('ssp_v5_pdf_theme');
+if (savedTheme) $('pdf-reader').dataset.theme = savedTheme;
+window.addEventListener('resize', () => { if (pdfDoc) renderPage(); });
+document.addEventListener('keydown', (e) => {
+  if (!$('pdf-reader').classList.contains('open')) return;
+  if (e.key === 'ArrowRight') pdfGo(1);
+  if (e.key === 'ArrowLeft')  pdfGo(-1);
+  if (e.key === 'Escape')     closePdfReader();
+});
+renderReader();
+cloudPull();
+(async () => { const sb = await sbc(); sb?.auth.onAuthStateChange((e) => { if (e === 'SIGNED_IN') cloudPull(); }); })();
+</script>
 </body>
 </html>
