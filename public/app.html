@@ -3737,17 +3737,84 @@ async function renderPage(){
     const canvas = $('pdf-canvas'), ctx = canvas.getContext('2d');
     const avail = $('pdf-stage').clientWidth - 20;
     const base = page.getViewport({ scale: 1 });
-    const scale = Math.min(3, Math.max(0.5, avail / base.width)) * (window.devicePixelRatio || 1);
+    const fit = Math.min(3, Math.max(0.5, avail / base.width));
+    const dpr = window.devicePixelRatio || 1;
+    const scale = fit * userZoom * dpr;
     const vp = page.getViewport({ scale });
     canvas.width = vp.width; canvas.height = vp.height;
-    canvas.style.width = (vp.width / (window.devicePixelRatio || 1)) + 'px';
+    canvas.style.width = (vp.width / dpr) + 'px';
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
     $('pdf-page-label').textContent = `${curPage} / ${pdfDoc.numPages}`;
     $('pdf-progress-bar').style.width = Math.round((curPage / pdfDoc.numPages) * 100) + '%';
-    $('pdf-stage').scrollTop = 0;
+    $('pdf-stage').classList.toggle('zoomed', userZoom > 1.001);
     updateBookmarkIcon();
     if (curDoc) { curDoc.last_page = curPage; saveDocs(); }
   } finally { rendering = false; }
+}
+
+/* ── Zoom (botões, teclado, ctrl+scroll e pinça de dois dedos) ── */
+const ZOOM_MIN = 0.6, ZOOM_MAX = 4;
+let userZoom = parseFloat(localStorage.getItem('ssp_v5_pdf_zoom') || '1') || 1;
+let zoomRenderTimer = null;
+
+function applyZoom(next, anchor){
+  const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+  if (Math.abs(clamped - userZoom) < 0.001) return;
+  const stage = $('pdf-stage');
+  const k = clamped / userZoom;
+  const ax = anchor ? anchor.x : stage.clientWidth / 2;
+  const ay = anchor ? anchor.y : stage.clientHeight / 2;
+  // Mantém o ponto ancorado (dedos/cursor) estável durante o zoom
+  const nl = (stage.scrollLeft + ax) * k - ax;
+  const nt = (stage.scrollTop  + ay) * k - ay;
+  userZoom = clamped;
+  localStorage.setItem('ssp_v5_pdf_zoom', String(userZoom));
+  $('pdf-zoom-val').textContent = Math.round(userZoom * 100) + '%';
+  clearTimeout(zoomRenderTimer);
+  zoomRenderTimer = setTimeout(async () => {
+    await renderPage();
+    stage.scrollLeft = Math.max(0, nl);
+    stage.scrollTop  = Math.max(0, nt);
+  }, 40);
+}
+function pdfZoom(dir){ applyZoom(userZoom * (dir > 0 ? 1.25 : 1 / 1.25)); }
+function pdfZoomReset(){ applyZoom(1); }
+
+function initPdfGestures(){
+  const stage = $('pdf-stage');
+  if (!stage) return;
+  const rel = (cx, cy) => { const r = stage.getBoundingClientRect(); return { x: cx - r.left, y: cy - r.top }; };
+
+  // Ctrl+scroll / pinça de trackpad — listener não passivo para poder bloquear o zoom da página
+  stage.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+    applyZoom(userZoom * Math.exp(-dy * 0.0025), rel(e.clientX, e.clientY));
+  }, { passive: false });
+
+  // Pinça com dois dedos (touch)
+  let startDist = 0, startZoom = 1, anchor = null;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  stage.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2) return;
+    startDist = dist(e.touches); startZoom = userZoom;
+    anchor = rel((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+  }, { passive: true });
+  stage.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 2 || !startDist) return;
+    e.preventDefault();
+    applyZoom(startZoom * (dist(e.touches) / startDist), anchor);
+  }, { passive: false });
+  stage.addEventListener('touchend', () => { startDist = 0; }, { passive: true });
+
+  // Duplo toque/clique alterna entre 100% e 200%
+  let lastTap = 0;
+  stage.addEventListener('click', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) applyZoom(userZoom > 1.2 ? 1 : 2, rel(e.clientX, e.clientY));
+    lastTap = now;
+  });
 }
 
 function pdfGo(delta){
