@@ -1048,6 +1048,12 @@ body {
 
     <!-- ══ LEITURA & TAREFAS (PDF + AGENDADOR) ══ -->
     <div class="screen" id="screen-reader">
+      <!-- Cards de disciplinas (galeria com capas reais, offline-first) -->
+      <div class="subj-rail" id="rd-subject-rail"></div>
+      <button class="subj-chip" id="rd-filter-chip" style="display:none;" onclick="setSubjectFilter(null)">
+        <i class="fas fa-filter"></i> <span id="rd-filter-name"></span> <i class="fas fa-xmark"></i>
+      </button>
+
       <!-- Alternador de abas simples: Materiais / Cronograma -->
       <div class="rd-tabs">
         <button class="rd-tab active" id="rd-tab-docs"  onclick="readerTab('docs')"><i class="fas fa-file-pdf"></i> Materiais</button>
