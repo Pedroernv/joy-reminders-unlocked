@@ -734,7 +734,26 @@ body {
 .pdf-meta { display:flex; align-items:center; gap:14px; font-size:.8rem; font-weight:700; color:var(--pdf-fg); }
 .pdf-timer { opacity:.65; display:flex; align-items:center; gap:4px; font-size:.75rem; }
 .pdf-stage { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:10px; -webkit-overflow-scrolling:touch; }
-#pdf-canvas { max-width:100%; height:auto; box-shadow:0 2px 18px rgba(0,0,0,.14); border-radius:6px; }
+.pdf-stage.zoomed { justify-content:flex-start; }
+#pdf-canvas { height:auto; box-shadow:0 2px 18px rgba(0,0,0,.14); border-radius:6px; }
+.pdf-ic.sm { width:32px; height:32px; font-size:.85rem; }
+.pdf-zoom { display:flex; align-items:center; gap:2px; }
+.pdf-zoom-val { font-size:.72rem; font-weight:800; min-width:36px; text-align:center; opacity:.7; color:var(--pdf-fg); }
+
+/* ── CARDS DE DISCIPLINAS (galeria com imagens) ── */
+.subj-rail { display:grid; grid-auto-flow:column; grid-auto-columns:78%; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 2px 6px; margin:0 -2px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.subj-rail::-webkit-scrollbar { display:none; }
+@media (min-width:520px){ .subj-rail { grid-auto-flow:row; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); grid-auto-columns:auto; overflow:visible; } }
+.subj-cover { position:relative; scroll-snap-align:start; height:118px; border-radius:16px; overflow:hidden; cursor:pointer; background:#25313d; box-shadow:var(--shadow-item); border:2px solid transparent; -webkit-tap-highlight-color:transparent; }
+.subj-cover.active { border-color:var(--accent); }
+.subj-cover img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.subj-cover .ov { position:absolute; inset:0; background:linear-gradient(to top, rgba(10,16,22,.92) 0%, rgba(10,16,22,.55) 45%, rgba(10,16,22,.12) 100%); }
+.subj-cover .txt { position:absolute; left:12px; right:12px; bottom:12px; color:#fff; }
+.subj-cover .nm { font-family:'Merriweather',serif; font-size:.94rem; font-weight:700; line-height:1.2; text-shadow:0 1px 3px rgba(0,0,0,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.subj-cover .sub { font-size:.68rem; font-weight:600; opacity:.85; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.subj-cover .pbar { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.22); }
+.subj-cover .pbar > div { height:100%; transition:width .35s; }
+.subj-chip { display:inline-flex; align-items:center; gap:6px; align-self:flex-start; padding:5px 10px; border-radius:20px; background:rgba(91,127,166,.16); color:var(--accent); font-size:.74rem; font-weight:800; border:none; cursor:pointer; }
 
 /* TASKS */
 .task-card { background:var(--item-bg); border:1.5px solid var(--item-border); border-radius:var(--radius); padding:10px 12px; display:flex; align-items:flex-start; gap:10px; box-shadow:var(--shadow-item); }
