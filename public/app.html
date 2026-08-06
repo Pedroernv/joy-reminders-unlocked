@@ -3625,7 +3625,7 @@ function readerTab(t){
   renderReader();
 }
 function readerPrimaryAction(){ tab === 'sched' ? openScheduleModal() : pickPdfFile(); }
-function renderReader(){ renderPdfList(); renderSchedules(); }
+function renderReader(){ renderSubjectRail(); renderPdfList(); renderSchedules(); }
 
 /* ── Materiais (PDFs) ─────────────────────── */
 function renderPdfList(){
@@ -3635,7 +3635,9 @@ function renderPdfList(){
   $('rd-docs-add').style.display   = has ? 'flex' : 'none';
   $('rd-search-wrap').style.display= docs.length > 2 ? 'flex' : 'none';
   const q = ($('rd-search')?.value || '').trim().toLowerCase();
-  const shown = docs.filter(d => !q || d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q));
+  const shown = docs
+    .filter(d => !subjFilter || (d.subject || '') === subjFilter)
+    .filter(d => !q || d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q));
   list.innerHTML = shown.map(d => {
     const pct = d.total_pages ? Math.min(100, Math.round((d.last_page / d.total_pages) * 100)) : 0;
     const mins = Math.round((d.reading_seconds || 0) / 60);
@@ -3647,10 +3649,11 @@ function renderPdfList(){
         <div class="rd-bar"><div style="width:${pct}%"></div></div>
       </div>
       <div class="rd-card-actions">
+        <button class="rd-mini" title="Disciplina" onclick="event.stopPropagation();openPdfSubjectModal('${d.id}')"><i class="fas fa-tag"></i></button>
         <button class="rd-mini del" onclick="event.stopPropagation();removePdf('${d.id}')"><i class="fas fa-trash"></i></button>
       </div>
     </div>`;
-  }).join('') || (docs.length ? `<div class="empty-state">Nenhum material encontrado.</div>` : '');
+  }).join('') || (docs.length ? `<div class="empty-mini">Nenhum material nesta disciplina.</div>` : '');
 }
 
 function pickPdfFile(){
@@ -3880,19 +3883,20 @@ function fmtHour(dt){ return new Date(dt).toLocaleTimeString('pt-BR', { hour:'2-
 
 function renderSchedules(){
   const list = $('rd-sched-list'); if (!list) return;
+  const visible = scheds.filter(s => !subjFilter || schedSubject(s) === subjFilter);
   const has = scheds.length > 0;
   $('rd-sched-empty').style.display   = has ? 'none' : 'block';
   $('rd-sched-content').style.display = has ? 'flex' : 'none';
   if (!has) return;
 
-  const done = scheds.filter(s => s.is_completed).length;
-  const upcoming = scheds.filter(s => !s.is_completed && new Date(s.start_time) >= new Date()).length;
+  const done = visible.filter(s => s.is_completed).length;
+  const upcoming = visible.filter(s => !s.is_completed && new Date(s.start_time) >= new Date()).length;
   $('rd-sched-summary').innerHTML = `
     <div class="rd-stat"><div class="rd-stat-v">${upcoming}</div><div class="rd-stat-l">Por fazer</div></div>
     <div class="rd-stat"><div class="rd-stat-v">${done}</div><div class="rd-stat-l">Concluídos</div></div>
-    <div class="rd-stat"><div class="rd-stat-v">${scheds.length ? Math.round((done / scheds.length) * 100) : 0}%</div><div class="rd-stat-l">Progresso</div></div>`;
+    <div class="rd-stat"><div class="rd-stat-v">${visible.length ? Math.round((done / visible.length) * 100) : 0}%</div><div class="rd-stat-l">Progresso</div></div>`;
 
-  const sorted = [...scheds].sort((a,b) => (a.is_completed - b.is_completed) || (new Date(a.start_time) - new Date(b.start_time)));
+  const sorted = [...visible].sort((a,b) => (a.is_completed - b.is_completed) || (new Date(a.start_time) - new Date(b.start_time)));
   let lastDay = '';
   list.innerHTML = sorted.map(s => {
     const d = docs.find(x => x.id === s.pdf_id);
