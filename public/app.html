@@ -3994,6 +3994,159 @@ function checkStudyReminders(){
   });
 }
 
+/* ══════════════════════════════════════════════════
+   CARDS DE DISCIPLINAS (capas reais, online + offline)
+   ────────────────────────────────────────────────
+   • Cada disciplina tem uma imagem local (bundled asset) de reserva.
+   • Capas remotas são descarregadas uma vez e guardadas em IndexedDB,
+     ficando disponíveis offline nas visitas seguintes.
+══════════════════════════════════════════════════ */
+const SUBJ_IMG_DIR = '/subjects/';
+const SUBJ_IMG_RULES = [
+  [/mat[eh]?m|c[aá]lc|[aá]lgebra|geometr/i, 'math_default'],
+  [/f[ií]sic|physic/i,                       'physics_default'],
+  [/qu[ií]mic|chemis/i,                      'chemistry_default'],
+  [/biolog|ci[eê]nc|anatom/i,                'biology_default'],
+  [/geograf|geolog/i,                        'geography_default'],
+  [/hist[oó]r|filosof|sociolog/i,            'history_default'],
+  [/portugu|reda|literat|l[ií]ngua/i,        'portuguese_default'],
+  [/ingl[eê]s|english/i,                     'english_default'],
+];
+const SUBJ_COLORS = ['#5B7FA6','#2F7A6B','#A8642E','#6B5BA6','#A63D4F','#3D7AA6','#7A8F2E','#8A4E7A'];
+
+function subjFallbackKey(name){
+  for (const [re, key] of SUBJ_IMG_RULES) if (re.test(name || '')) return key;
+  return 'default_subject';
+}
+function subjLocalCover(name){ return SUBJ_IMG_DIR + subjFallbackKey(name) + '.jpg'; }
+function subjColor(name, i){ return SUBJ_COLORS[i % SUBJ_COLORS.length]; }
+
+/* Cache de imagens remotas → IndexedDB (mesma store dos PDFs) */
+const coverUrlCache = new Map();
+async function resolveRemoteCover(url){
+  if (!url) return null;
+  if (coverUrlCache.has(url)) return coverUrlCache.get(url);
+  const key = 'cover:' + url;
+  let blob = null;
+  try { blob = await idbGet(key); } catch {}
+  if (!blob) {
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      if (res.ok) { blob = await res.blob(); await idbPut(key, blob); }
+    } catch {}
+  }
+  if (!blob) return null;
+  const obj = URL.createObjectURL(blob);
+  coverUrlCache.set(url, obj);
+  return obj;
+}
+
+/* ── Estatísticas por disciplina ── */
+function subjectStats(name){
+  const sd = docs.filter(d => (d.subject || '') === name);
+  const ss = scheds.filter(s => schedSubject(s) === name);
+  const readPct = sd.length
+    ? Math.round(sd.reduce((a,d) => a + (d.total_pages ? Math.min(1, d.last_page / d.total_pages) : 0), 0) / sd.length * 100)
+    : null;
+  const donePct = ss.length ? Math.round(ss.filter(s => s.is_completed).length / ss.length * 100) : null;
+  const parts = [readPct, donePct].filter(v => v !== null);
+  const progress = parts.length ? Math.round(parts.reduce((a,b)=>a+b,0) / parts.length) : 0;
+  const pending = sd.filter(d => !d.total_pages || d.last_page < d.total_pages).length;
+  const next = ss.filter(s => !s.is_completed && new Date(s.start_time) >= new Date())
+                 .sort((a,b) => new Date(a.start_time) - new Date(b.start_time))[0] || null;
+  return { docs: sd, scheds: ss, progress, pending, next };
+}
+function schedSubject(s){
+  if (s.subject) return s.subject;
+  const d = docs.find(x => x.id === s.pdf_id);
+  return d?.subject || '';
+}
+
+/* ── Render do carrossel/grid de cards ── */
+let subjFilter = null;
+function subjectsList(){ try { return Array.isArray(subjects) ? subjects : []; } catch { return []; } }
+
+function renderSubjectRail(){
+  const rail = $('rd-subject-rail'); if (!rail) return;
+  const list = subjectsList();
+  if (!list.length) { rail.innerHTML = ''; rail.style.display = 'none'; return; }
+  rail.style.display = '';
+  rail.innerHTML = list.map((s, i) => {
+    const st = subjectStats(s.name);
+    const color = s.color_theme || subjColor(s.name, i);
+    const bits = [];
+    bits.push(st.pending ? `${st.pending} PDF${st.pending > 1 ? 's' : ''} pendente${st.pending > 1 ? 's' : ''}` : `${st.docs.length} material${st.docs.length === 1 ? '' : 'is'}`);
+    if (st.next) bits.push(`Próxima: ${fmtDay(st.next.start_time)} às ${fmtHour(st.next.start_time)}`);
+    return `<div class="subj-cover ${subjFilter === s.name ? 'active' : ''}" onclick="setSubjectFilter('${esc(s.name).replace(/'/g,'&#39;')}')">
+      <img alt="Capa de ${esc(s.name)}" loading="lazy" data-subj="${esc(s.name)}"
+           src="${esc(subjLocalCover(s.name))}"
+           onerror="this.src='${SUBJ_IMG_DIR}default_subject.jpg'" />
+      <div class="ov"></div>
+      <div class="txt">
+        <div class="nm">${esc(s.name)}</div>
+        <div class="sub">${esc(bits.join(' · '))}</div>
+      </div>
+      <div class="pbar"><div style="width:${st.progress}%;background:${esc(color)}"></div></div>
+    </div>`;
+  }).join('');
+  // Capas personalizadas (online) entram por cima, servidas do cache local quando offline
+  list.forEach(async (s) => {
+    if (!s.cover_image_url) return;
+    const url = await resolveRemoteCover(s.cover_image_url);
+    if (!url) return;
+    rail.querySelectorAll(`img[data-subj="${CSS.escape(s.name)}"]`).forEach(img => { img.src = url; });
+  });
+  const chip = $('rd-filter-chip');
+  if (chip) {
+    chip.style.display = subjFilter ? 'inline-flex' : 'none';
+    $('rd-filter-name').textContent = subjFilter || '';
+  }
+}
+
+function setSubjectFilter(name){
+  subjFilter = (name && subjFilter !== name) ? name : null;
+  renderReader();
+}
+
+/* ── Definir a disciplina de um material ── */
+let pdfSubjEditing = null;
+function openPdfSubjectModal(id){
+  const d = docs.find(x => x.id === id); if (!d) return;
+  pdfSubjEditing = id;
+  const sel = $('pdf-subject-select');
+  sel.innerHTML = `<option value="">— Sem disciplina —</option>` +
+    subjectsList().map(s => `<option value="${esc(s.name)}" ${s.name === d.subject ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  $('modal-pdf-subject').classList.add('open');
+}
+function closePdfSubjectModal(){ $('modal-pdf-subject').classList.remove('open'); pdfSubjEditing = null; }
+function submitPdfSubject(){
+  const d = docs.find(x => x.id === pdfSubjEditing);
+  if (d) {
+    d.subject = $('pdf-subject-select').value || '';
+    saveDocs(); cloudUpsertDoc(d);
+  }
+  closePdfSubjectModal();
+  renderReader();
+  showToast('Material organizado por disciplina.');
+}
+
+/* ── Sincronização das disciplinas na nuvem (best-effort) ── */
+async function cloudSyncSubjects(){
+  const sb = await sbc(); const u = await currentUser(); if (!sb || !u) return;
+  try {
+    const { data } = await sb.from('subjects').select('id,name,cover_image_url').eq('user_id', u.id);
+    const existing = new Map((data || []).map(r => [String(r.name).toLowerCase(), r]));
+    const rows = subjectsList().map((s, i) => ({
+      id: existing.get(String(s.name).toLowerCase())?.id || uid(),
+      user_id: u.id, name: s.name,
+      color_theme: s.color_theme || subjColor(s.name, i),
+      cover_image_url: s.cover_image_url || null,
+      local_fallback_key: subjFallbackKey(s.name),
+    }));
+    if (rows.length) await sb.from('subjects').upsert(rows);
+  } catch {}
+}
+
 /* ── Expor no escopo global (o HTML usa onclick) ── */
 Object.assign(window, {
   readerTab, readerPrimaryAction, renderReader, renderPdfList, pickPdfFile, removePdf,
