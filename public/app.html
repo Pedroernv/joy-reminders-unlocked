@@ -1107,12 +1107,31 @@ body {
   </div>
   <div class="pdf-stage" id="pdf-stage"><canvas id="pdf-canvas"></canvas></div>
   <div class="pdf-bottombar">
-    <button class="pdf-ic" onclick="pdfGo(-1)" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+    <button class="pdf-ic" onclick="pdfGo(-1)" aria-label="Página anterior"><i class="fas fa-chevron-left"></i></button>
     <div class="pdf-meta">
       <span id="pdf-page-label">1 / 1</span>
       <span class="pdf-timer"><i class="fas fa-stopwatch"></i> <span id="pdf-timer">00:00</span></span>
     </div>
-    <button class="pdf-ic" onclick="pdfGo(1)" aria-label="Próxima"><i class="fas fa-chevron-right"></i></button>
+    <div class="pdf-zoom">
+      <button class="pdf-ic sm" onclick="pdfZoom(-1)" aria-label="Diminuir zoom"><i class="fas fa-magnifying-glass-minus"></i></button>
+      <span class="pdf-zoom-val" id="pdf-zoom-val" onclick="pdfZoomReset()">100%</span>
+      <button class="pdf-ic sm" onclick="pdfZoom(1)" aria-label="Aumentar zoom"><i class="fas fa-magnifying-glass-plus"></i></button>
+    </div>
+    <button class="pdf-ic" onclick="pdfGo(1)" aria-label="Próxima página"><i class="fas fa-chevron-right"></i></button>
+  </div>
+</div>
+
+<!-- ══ MODAL: definir disciplina de um material ══ -->
+<div class="modal-overlay" id="modal-pdf-subject">
+  <div class="modal-box">
+    <div class="modal-header"><i class="fas fa-tag"></i> Disciplina do material<button class="modal-close" onclick="closePdfSubjectModal()" aria-label="Fechar"><i class="fas fa-xmark"></i></button></div>
+    <div style="padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;">
+      <select id="pdf-subject-select" class="input-field"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePdfSubjectModal()">Cancelar</button>
+      <button class="btn-save" onclick="submitPdfSubject()">Guardar</button>
+    </div>
   </div>
 </div>
 
