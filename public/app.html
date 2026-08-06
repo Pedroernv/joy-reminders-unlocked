@@ -4157,6 +4157,8 @@ Object.assign(window, {
   openPdf, closePdfReader, pdfGo, togglePdfBookmark, cyclePdfTheme,
   openScheduleModal, closeScheduleModal, setScheduleType, onSchedPdfChange,
   submitScheduleModal, toggleSchedDone, removeSched, checkStudyReminders,
+  pdfZoom, pdfZoomReset, renderSubjectRail, setSubjectFilter,
+  openPdfSubjectModal, closePdfSubjectModal, submitPdfSubject, cloudSyncSubjects,
 });
 
 /* ── Init ─────────────────────────────────── */
@@ -4167,11 +4169,17 @@ document.addEventListener('keydown', (e) => {
   if (!$('pdf-reader').classList.contains('open')) return;
   if (e.key === 'ArrowRight') pdfGo(1);
   if (e.key === 'ArrowLeft')  pdfGo(-1);
+  if (e.key === '+' || e.key === '=') pdfZoom(1);
+  if (e.key === '-' || e.key === '_') pdfZoom(-1);
+  if (e.key === '0') pdfZoomReset();
   if (e.key === 'Escape')     closePdfReader();
 });
+$('pdf-zoom-val').textContent = Math.round(userZoom * 100) + '%';
+initPdfGestures();
 renderReader();
 cloudPull();
-(async () => { const sb = await sbc(); sb?.auth.onAuthStateChange((e) => { if (e === 'SIGNED_IN') cloudPull(); }); })();
+cloudSyncSubjects();
+(async () => { const sb = await sbc(); sb?.auth.onAuthStateChange((e) => { if (e === 'SIGNED_IN') { cloudPull(); cloudSyncSubjects(); } }); })();
 </script>
 </body>
 </html>
