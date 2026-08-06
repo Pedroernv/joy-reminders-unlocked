@@ -4083,7 +4083,9 @@ function renderSubjectRail(){
     const st = subjectStats(s.name);
     const color = s.color_theme || subjColor(s.name, i);
     const bits = [];
-    bits.push(st.pending ? `${st.pending} PDF${st.pending > 1 ? 's' : ''} pendente${st.pending > 1 ? 's' : ''}` : `${st.docs.length} material${st.docs.length === 1 ? '' : 'is'}`);
+    bits.push(st.pending
+      ? `${st.pending} PDF${st.pending > 1 ? 's' : ''} pendente${st.pending > 1 ? 's' : ''}`
+      : `${st.docs.length} ${st.docs.length === 1 ? 'material' : 'materiais'}`);
     if (st.next) bits.push(`Próxima: ${fmtDay(st.next.start_time)} às ${fmtHour(st.next.start_time)}`);
     return `<div class="subj-cover ${subjFilter === s.name ? 'active' : ''}" onclick="setSubjectFilter('${esc(s.name).replace(/'/g,'&#39;')}')">
       <img alt="Capa de ${esc(s.name)}" loading="lazy" data-subj="${esc(s.name)}"
