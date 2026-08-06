@@ -24,6 +24,7 @@ export type Database = {
           reading_seconds: number
           storage_path: string | null
           subject: string | null
+          subject_id: string | null
           title: string
           total_pages: number
           updated_at: string
@@ -38,6 +39,7 @@ export type Database = {
           reading_seconds?: number
           storage_path?: string | null
           subject?: string | null
+          subject_id?: string | null
           title: string
           total_pages?: number
           updated_at?: string
@@ -52,12 +54,21 @@ export type Database = {
           reading_seconds?: number
           storage_path?: string | null
           subject?: string | null
+          subject_id?: string | null
           title?: string
           total_pages?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pdf_documents_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_schedules: {
         Row: {
@@ -68,6 +79,7 @@ export type Database = {
           pdf_id: string | null
           start_page: number | null
           start_time: string
+          subject_id: string | null
           target_page: number | null
           title: string
           type: string
@@ -82,6 +94,7 @@ export type Database = {
           pdf_id?: string | null
           start_page?: number | null
           start_time: string
+          subject_id?: string | null
           target_page?: number | null
           title: string
           type?: string
@@ -96,6 +109,7 @@ export type Database = {
           pdf_id?: string | null
           start_page?: number | null
           start_time?: string
+          subject_id?: string | null
           target_page?: number | null
           title?: string
           type?: string
@@ -110,7 +124,47 @@ export type Database = {
             referencedRelation: "pdf_documents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "study_schedules_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      subjects: {
+        Row: {
+          color_theme: string
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          local_fallback_key: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color_theme?: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          local_fallback_key?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color_theme?: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          local_fallback_key?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_sync: {
         Row: {

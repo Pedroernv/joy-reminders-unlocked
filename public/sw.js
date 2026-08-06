@@ -1,9 +1,19 @@
 // SmartSchoolPro Service Worker — offline cache + background notifications
-const CACHE = 'ssp-v14';
+const CACHE = 'ssp-v15';
 const ASSETS = [
   '/app.html',
   '/manifest.json',
   '/__l5e/assets-v1/8bcbcfa0-40d3-4063-8f8f-92b18eafc1cf/icon.png',
+  // Capas locais das disciplinas — garantem os cards funcionando offline
+  '/subjects/math_default.jpg',
+  '/subjects/physics_default.jpg',
+  '/subjects/chemistry_default.jpg',
+  '/subjects/biology_default.jpg',
+  '/subjects/geography_default.jpg',
+  '/subjects/history_default.jpg',
+  '/subjects/portuguese_default.jpg',
+  '/subjects/english_default.jpg',
+  '/subjects/default_subject.jpg',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
 ];
