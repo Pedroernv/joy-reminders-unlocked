@@ -1509,6 +1509,8 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
   // Reagenda notificações (nativas ou do service worker) sempre que a grade muda
   try { if (typeof scheduleBackgroundNotifications === 'function') scheduleBackgroundNotifications(); } catch {}
+  // Atualiza os cards de disciplinas (capas) e sincroniza na nuvem
+  try { window.renderSubjectRail?.(); window.cloudSyncSubjects?.(); } catch {}
 }
 
 /* ══════════════════════════════════════════
@@ -3824,7 +3826,9 @@ function pdfGo(delta){
   if (!pdfDoc) return;
   const next = curPage + delta;
   if (next < 1 || next > pdfDoc.numPages) return;
-  curPage = next; renderPage();
+  curPage = next;
+  $('pdf-stage').scrollTop = 0;
+  renderPage();
 }
 
 function updateBookmarkIcon(){
